@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+  </PropertyGroup>
+
+  <!-- Copy macOS native dylibs if present -->
+  <Target Name="CopyNativeMacDylibs" AfterTargets="Build">
+    <PropertyGroup>
+      <NativeAppDylib>$(MSBuildProjectDirectory)/native/macos/libwkapp.dylib</NativeAppDylib>
+      <NativeWebDylib>$(MSBuildProjectDirectory)/native/macos/libwkwebview.dylib</NativeWebDylib>
+    </PropertyGroup>
+    <Message Importance="low" Text="Native app dylib path: $(NativeAppDylib)" />
+    <Message Importance="low" Text="Native webview dylib path: $(NativeWebDylib)" />
+    <Copy SourceFiles="$(NativeAppDylib)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" Condition="Exists('$(NativeAppDylib)')" />
+    <Copy SourceFiles="$(NativeWebDylib)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" Condition="Exists('$(NativeWebDylib)')" />
+  </Target>
+</Project>
