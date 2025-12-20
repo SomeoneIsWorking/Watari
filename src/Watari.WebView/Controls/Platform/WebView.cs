@@ -1,15 +1,15 @@
-using Watari.Controls.MacOS;
+using Watari.Controls.Interfaces;
 
 namespace Watari.Controls.Platform;
 
 public class WebView
 {
-    public MacOS.WebView? MacOS;
+    public IWebView WebViewImpl { get; }
     public WebView()
     {
-        MacOS = new MacOS.WebView();
+        WebViewImpl = new MacOS.WebView();
     }
-    public bool Navigate(string url) => MacOS!.Navigate(url);
-    public bool Eval(string js) => MacOS!.Eval(js);
-    public void Destroy() => MacOS!.Destroy();
+    public bool Navigate(string url) => WebViewImpl.Navigate(url);
+    public bool Eval(string js) => WebViewImpl.Eval(js);
+    public void Destroy() => WebViewImpl.Destroy();
 }

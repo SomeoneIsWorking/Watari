@@ -1,8 +1,9 @@
 using Watari.Bridge.MacOS;
+using Watari.Controls.Interfaces;
 
 namespace Watari.Controls.MacOS;
 
-internal class Application
+internal class Application : IApplication
 {
     public IntPtr Handle { get; }
     public Application()
@@ -10,9 +11,13 @@ internal class Application
         Handle = AppliationBridge.Init();
     }
 
-    public void SetMainWindow(Window window)
+    public void SetMainWindow(IWindow window)
     {
-        AppliationBridge.SetMainWindow(Handle, window.Handle);
+        if (window is not Window macosWindow)
+        {
+            throw new ArgumentException("window must be of type MacOS.Window");
+        }
+        AppliationBridge.SetMainWindow(Handle, macosWindow.Handle);
     }
 
     public void RunLoop() => AppliationBridge.RunLoop(Handle);

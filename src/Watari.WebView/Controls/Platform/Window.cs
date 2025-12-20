@@ -1,16 +1,18 @@
+using Watari.Controls.Interfaces;
+
 namespace Watari.Controls.Platform;
 
 public class Window
 {
-    public MacOS.Window MacOS  { get; }
+    public IWindow WindowImpl { get; }
 
     public Window()
     {
-        MacOS = new MacOS.Window();
+        WindowImpl = new MacOS.Window();
     }
 
     public void SetContent(WebView webview)
     {
-        MacOS.SetContent(webview.MacOS!);
+        WindowImpl.SetContent(webview.WebViewImpl);
     }
 }

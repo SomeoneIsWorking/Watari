@@ -1,27 +1,29 @@
 
+using Watari.Controls.Interfaces;
+
 namespace Watari.Controls.Platform;
 
 public class Application
 {
-    private readonly MacOS.Application? MacOS;
+    private readonly IApplication _application;
     private readonly List<Window> _windows = [];
     public IReadOnlyList<Window> Windows => _windows;
     public Window? MainWindow { get; private set; }
 
     public Application()
     {
-        MacOS = new MacOS.Application();
+        _application = new MacOS.Application();
     }
 
-    public void RunLoop() => MacOS!.RunLoop();
-    public void StopLoop() => MacOS!.StopLoop();
+    public void RunLoop() => _application.RunLoop();
+    public void StopLoop() => _application.StopLoop();
 
     public void AddWindow(Window window, bool mainWindow)
     {
         _windows.Add(window);
         if (mainWindow)
         {
-            MacOS!.SetMainWindow(window.MacOS);
+            _application.SetMainWindow(window.WindowImpl);
             MainWindow = window;
         }
     }

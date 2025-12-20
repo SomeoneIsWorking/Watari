@@ -1,19 +1,23 @@
 using Watari.Bridge.MacOS;
+using Watari.Controls.Interfaces;
 
 namespace Watari.Controls.MacOS;
 
-public class Window
+public class Window : IWindow
 {
     public IntPtr Handle { get; private set; } = IntPtr.Zero;
 
     public Window()
     {
-        // create window and attach webview message callback
         Handle = WindowBridge.WindowBridge_CreateWindow();
     }
 
-    public void SetContent(WebView webview)
+    public void SetContent(IWebView webview)
     {
-        WindowBridge.WindowBridge_SetContent(Handle, webview.Handle);
+        if (webview is not WebView macosWebView)
+        {
+            throw new ArgumentException("webview must be of type MacOS.WebView");
+        }
+        WindowBridge.WindowBridge_SetContent(Handle, macosWebView.Handle);
     }
 }

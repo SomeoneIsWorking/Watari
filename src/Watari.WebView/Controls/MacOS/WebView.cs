@@ -1,8 +1,9 @@
 using Watari.Bridge.MacOS;
+using Watari.Controls.Interfaces;
 
 namespace Watari.Controls.MacOS;
 
-public class WebView
+public class WebView : IWebView
 {
     public IntPtr Handle { get; private set; } = IntPtr.Zero;
 
