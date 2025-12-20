@@ -7,5 +7,5 @@ public class FrameworkOptions
     public int DevPort { get; set; } = 8983;
     public int ServerPort { get; set; } = 7533;
     public List<Type> ExposedTypes { get; } = [];
-    public Dictionary<Type, dynamic> Handlers { get; } = [];
+    public Dictionary<Type, ITypeHandler> Handlers { get; } = [];
 }

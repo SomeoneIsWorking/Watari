@@ -8,5 +8,5 @@ public class ServerOptions
     public required string FrontendPath { get; set; }
     public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
     public required List<Type> ExposedTypes { get; set; }
-    public required Dictionary<Type, dynamic> Handlers { get; init; }
+    public required Dictionary<Type, ITypeHandler> Handlers { get; init; }
 }

@@ -1,7 +1,6 @@
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using System.Text.Json;
@@ -9,16 +8,11 @@ using System.Text.Json.Serialization;
 
 namespace Watari;
 
-public class Server
+public class Server(ServerOptions options)
 {
     public NpmManager NpmManager { get; } = new NpmManager();
     public WebApplication WebApplication { get; private set; } = null!;
-    public ServerOptions Options { get; }
-
-    public Server(ServerOptions options)
-    {
-        Options = options;
-    }
+    public ServerOptions Options { get; } = options;
 
     public async Task Start()
     {
