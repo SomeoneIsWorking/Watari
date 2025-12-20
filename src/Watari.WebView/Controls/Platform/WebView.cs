@@ -12,4 +12,5 @@ public class WebView
     public bool Navigate(string url) => WebViewImpl.Navigate(url);
     public bool Eval(string js) => WebViewImpl.Eval(js);
     public void Destroy() => WebViewImpl.Destroy();
+    public void AddUserScript(string scriptSource, int injectionTime, bool forMainFrameOnly) => WebViewImpl.AddUserScript(scriptSource, injectionTime, forMainFrameOnly);
 }

@@ -1,5 +1,30 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
+import { ref } from 'vue'
+import { Api } from './generated/api'
+import * as models from './generated/models'
+
+const result = ref<string>('')
+
+const testHello = async () => {
+  try {
+    const res = await Api.Hello('World')
+    result.value = res
+  } catch (e) {
+    result.value = 'Error: ' + e
+  }
+}
+
+const testGetX = async () => {
+  try {
+    const y: models.Y = {
+      Value: 42
+    }
+    const res = await Api.GetX(y)
+    result.value = `X: ${res.Name}`
+  } catch (e) {
+    result.value = 'Error: ' + e
+  }
+}
 </script>
 
 <template>
@@ -12,6 +37,11 @@ import HelloWorld from './components/HelloWorld.vue'
     </a>
   </div>
   <HelloWorld msg="Vite + Vue" />
+  <div>
+    <button @click="testHello">Test Hello</button>
+    <button @click="testGetX">Test GetX</button>
+    <p>Result: {{ result }}</p>
+  </div>
 </template>
 
 <style scoped>

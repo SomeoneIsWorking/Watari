@@ -1,6 +1,8 @@
-﻿
-new Watari.Framework(new Watari.FrameworkOptions
-{
-    Dev = true,
-    FrontendPath = Path.Combine(Watari.FrameworkOptions.GetCallingFilePath(), "frontend")
-}).Run(args);
+﻿new Watari.FrameworkBuilder()
+    .SetDev(true)
+    .Expose<Api>()
+    .Expose<Api2>()
+    .SetFrontendPathRelative("frontend")
+    .Build()
+    .Run(args);
+

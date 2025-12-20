@@ -24,4 +24,9 @@ public class WebView : IWebView
     }
 
     public void Destroy() => WebViewBridge.Destroy(Handle);
+
+    public void AddUserScript(string scriptSource, int injectionTime, bool forMainFrameOnly)
+    {
+        WebViewBridge.AddUserScript(Handle, scriptSource, injectionTime, forMainFrameOnly);
+    }
 }
