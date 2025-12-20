@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <!-- Copy macOS native dylibs if present -->
-    <Target Name="CopyNativeMacDylibs" AfterTargets="Build">
+  <Target Name="CopyNativeMacDylibs" AfterTargets="Build">
     <PropertyGroup>
       <NativeAppliationDylib>$(MSBuildProjectDirectory)/native/macos/libapplication.dylib</NativeAppliationDylib>
       <NativeWindowDylib>$(MSBuildProjectDirectory)/native/macos/libwindow.dylib</NativeWindowDylib>

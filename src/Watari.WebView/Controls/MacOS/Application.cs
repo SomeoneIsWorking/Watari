@@ -1,17 +1,21 @@
 using System.Reflection.Metadata;
 using Watari.WebView.Bridge.MacOS;
 
-namespace Watari.WebView.Controls.MacOS
-{
-    internal class Application
-    {
-        public IntPtr Handle { get; }
-        public Application()
-        {
-            Handle = AppliationBridge.Init();
-        }
+namespace Watari.WebView.Controls.MacOS;
 
-        public void RunLoop() => AppliationBridge.RunLoop(Handle);
-        public void StopLoop() => AppliationBridge.StopLoop(Handle);
+internal class Application
+{
+    public IntPtr Handle { get; }
+    public Application()
+    {
+        Handle = AppliationBridge.Init();
     }
+
+    public void SetMainWindow(Window window)
+    {
+        AppliationBridge.SetMainWindow(Handle, window.Handle);
+    }
+
+    public void RunLoop() => AppliationBridge.RunLoop(Handle);
+    public void StopLoop() => AppliationBridge.StopLoop(Handle);
 }

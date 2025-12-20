@@ -1,17 +1,16 @@
-namespace Watari.WebView.Controls.Platform
+namespace Watari.WebView.Controls.Platform;
+
+public class Window
 {
-    internal class Window
+    public MacOS.Window MacOS  { get; }
+
+    public Window()
     {
-        private readonly MacOS.Window _macWindow;
+        MacOS = new MacOS.Window();
+    }
 
-        public Window()
-        {
-            _macWindow = new MacOS.Window();
-        }
-
-        public void SetContent(WebView webview)
-        {
-            _macWindow.SetContent(webview.MacOS!);
-        }
+    public void SetContent(WebView webview)
+    {
+        MacOS.SetContent(webview.MacOS!);
     }
 }

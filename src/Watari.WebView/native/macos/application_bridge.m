@@ -1,6 +1,24 @@
+#include "objc/runtime.h"
 #include <AppKit/AppKit.h>
 #import <Cocoa/Cocoa.h>
 #include <stdlib.h>
+
+@interface ApplicationDelegate : NSObject <NSApplicationDelegate>
+
+@property(strong) IBOutlet NSWindow *mainWindow;
+
+@end
+
+@implementation ApplicationDelegate
+
+- (BOOL)applicationShouldHandleReopen:(NSApplication *)sender
+                    hasVisibleWindows:(BOOL)flag {
+  NSLog(@"[ApplicationDelegate] applicationShouldHandleReopen called");
+  [self.mainWindow makeKeyAndOrderFront:nil];
+  return YES;
+}
+
+@end
 
 __attribute__((visibility("default"))) CFTypeRef Application_Init(void) {
   NSLog(@"[ApplicationBridge] initializing NSApp");
@@ -21,6 +39,11 @@ __attribute__((visibility("default"))) CFTypeRef Application_Init(void) {
   [appMenu addItem:quitItem];
   [appMenuItem setSubmenu:appMenu];
   [app setMainMenu:menubar];
+  ApplicationDelegate *delegate = [[ApplicationDelegate alloc] init];
+  [app setDelegate:delegate];
+  objc_setAssociatedObject(app, "ApplicationDelegate", delegate,
+                           OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
   NSLog(@"[ApplicationBridge] main menu created");
   return CFBridgingRetain(app);
 }
@@ -36,4 +59,21 @@ __attribute__((visibility("default"))) void Application_RunLoop(void *app) {
 __attribute__((visibility("default"))) void Application_StopLoop(void *app) {
   NSLog(@"[ApplicationBridge stopLoop] stopping");
   [(__bridge NSApplication *)app stop:nil];
+}
+
+__attribute__((visibility("default"))) void
+Application_SetMainWindow(void *app, void *window) {
+  @autoreleasepool {
+    NSLog(@"[ApplicationBridge setKeyWindow] setting key window");
+    NSApplication *application = (__bridge NSApplication *)app;
+    NSWindow *nsWindow = (__bridge NSWindow *)window;
+    [nsWindow makeKeyAndOrderFront:nil];
+    ApplicationDelegate *delegate =
+        (ApplicationDelegate *)[application delegate];
+    delegate.mainWindow = nsWindow;
+    for (NSWindow *win in [application windows]) {
+        [win setReleasedWhenClosed:[win isKeyWindow]];
+  }
+    NSLog(@"[ApplicationBridge setKeyWindow] set key window %p", nsWindow);
+  }
 }

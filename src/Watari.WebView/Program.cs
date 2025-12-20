@@ -12,7 +12,7 @@ class Program
         var app = new Controls.Platform.Application();
 
         var win = new Controls.Platform.Window();
-        app.AddWindow(win);
+        app.AddWindow(win, true);
         var webview = new Controls.Platform.WebView();
         webview.Navigate(url);
         webview.OnMessage += (m) => Console.WriteLine("[webview] " + m);
