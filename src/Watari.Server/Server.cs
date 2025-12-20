@@ -13,33 +13,36 @@ public class Server
 {
     public NpmManager NpmManager { get; } = new NpmManager();
     public WebApplication WebApplication { get; private set; } = null!;
+    public ServerOptions Options { get; }
 
-    public async Task Start(ServerOptions options)
+    public Server(ServerOptions options)
+    {
+        Options = options;
+    }
+
+    public async Task Start()
     {
         var builder = WebApplication.CreateBuilder();
         builder.Services.AddCors();
         WebApplication webApplication = builder.Build();
-        webApplication.Urls.Add($"http://localhost:{options.ServerPort}");
+        webApplication.Urls.Add($"http://localhost:{Options.ServerPort}");
         webApplication.UseCors(builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
-        webApplication.MapPost("/invoke", async (HttpContext context) =>
-        {
-            return await HandleRequest(options, context);
-        });
+        webApplication.MapPost("/invoke", (Delegate)HandleRequest);
         WebApplication = webApplication;
 
-        if (options.Dev)
+        if (Options.Dev)
         {
-            var start = webApplication.StartAsync(options.CancellationToken);
-            await NpmManager.StartDev(options.FrontendPath, options.DevPort, options.CancellationToken);
+            var start = webApplication.StartAsync(Options.CancellationToken);
+            await NpmManager.StartDev(Options.FrontendPath, Options.DevPort, Options.CancellationToken);
             await start;
         }
         else
         {
-            await webApplication.StartAsync(options.CancellationToken);
+            await webApplication.StartAsync(Options.CancellationToken);
         }
     }
 
-    private static async Task<IResult> HandleRequest(ServerOptions options, HttpContext context)
+    private async Task<IResult> HandleRequest(HttpContext context)
     {
         var request = await JsonSerializer.DeserializeAsync<InvokeRequest>(context.Request.Body);
         if (request == null) return Results.BadRequest();
@@ -50,7 +53,7 @@ public class Server
         var typeName = parts[0];
         var methodName = parts[1];
 
-        var type = options.ExposedTypes.FirstOrDefault(t => t.Name == typeName);
+        var type = Options.ExposedTypes.FirstOrDefault(t => t.Name == typeName);
         if (type == null) return Results.NotFound();
 
         var method = type.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance);
@@ -64,22 +67,13 @@ public class Server
         {
             var paramType = parameters[i].ParameterType;
             var arg = request.Args[i];
-            if (options.Handlers.TryGetValue(paramType, out var handler))
-            {
-                var tsType = handler.GetType().GetGenericArguments()[1];
-                var tsValue = JsonSerializer.Deserialize(arg.GetRawText(), tsType);
-                args[i] = handler.FromTypeScript(tsValue);
-            }
-            else
-            {
-                args[i] = JsonSerializer.Deserialize(arg.GetRawText(), paramType);
-            }
+            args[i] = ResolveInput(paramType, arg);
         }
 
         var instance = Activator.CreateInstance(type);
         var result = method.Invoke(instance, args);
 
-        object? response = await ResolveResponse(options, method.ReturnType, result);
+        object? response = await ResolveResponse(method.ReturnType, result);
 
         if (response == null)
         {
@@ -93,7 +87,7 @@ public class Server
         });
     }
 
-    private static async Task<object?> ResolveResponse(ServerOptions options, Type type, object? value)
+    private async Task<object?> ResolveResponse(Type type, object? value)
     {
         if (value == null) return null;
 
@@ -109,7 +103,7 @@ public class Server
             var resultProperty = task.GetType().GetProperty("Result");
             var actualResult = resultProperty?.GetValue(task);
             var innerType = type.GetGenericArguments()[0];
-            return await ResolveResponse(options, innerType, actualResult);
+            return await ResolveResponse(innerType, actualResult);
         }
         else if (type == typeof(Task))
         {
@@ -117,15 +111,30 @@ public class Server
             await task;
             return null; // Indicates NoContent
         }
-        else if (options.Handlers.TryGetValue(type, out var handler))
+        else if (Options.Handlers.TryGetValue(type, out var handler))
         {
             var tsValue = handler.ToTypeScript(value);
             var tsType = handler.GetType().GetGenericArguments()[1];
-            return await ResolveResponse(options, tsType, tsValue);
+            return await ResolveResponse(tsType, tsValue);
         }
         else
         {
             return value;
+        }
+    }
+
+    private object? ResolveInput(Type type, JsonElement json)
+    {
+        if (Options.Handlers.TryGetValue(type, out var handler))
+        {
+            var tsType = handler.GetType().GetGenericArguments()[1];
+            var tsValue = ResolveInput(tsType, json);
+            var csharpValue = handler.FromTypeScript(tsValue);
+            return csharpValue;
+        }
+        else
+        {
+            return JsonSerializer.Deserialize(json.GetRawText(), type);
         }
     }
 }

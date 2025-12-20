@@ -5,15 +5,13 @@ namespace Watari;
 
 public class Framework(FrameworkOptions options)
 {
-    public Types Types { get; } = new Types();
-    public Server Server { get; } = new Server();
     public FrameworkOptions Options { get; } = options;
 
     public bool Run(string[] args)
     {
         if (args.Any(x => x == "-g" || x == "--generate"))
         {
-            return Types.Generate(new TypeGeneratorOptions
+            return new Types().Generate(new TypeGeneratorOptions
             {
                 OutputPath = Options.FrontendPath,
                 ExposedTypes = Options.ExposedTypes,
@@ -22,7 +20,7 @@ public class Framework(FrameworkOptions options)
             });
         }
 
-        Server.Start(new ServerOptions
+        new Server(new ServerOptions
         {
             Dev = Options.Dev,
             DevPort = Options.DevPort,
@@ -30,7 +28,7 @@ public class Framework(FrameworkOptions options)
             FrontendPath = Options.FrontendPath,
             ExposedTypes = Options.ExposedTypes,
             Handlers = Options.Handlers
-        }).GetAwaiter().GetResult();
+        }).Start().GetAwaiter().GetResult();
 
         // Initialize application (menus, Dock, activation)
         var app = new Controls.Platform.Application();
