@@ -1,27 +1,24 @@
-﻿using System;
-
-namespace Watari.WebView;
+﻿namespace Watari.WebView;
 
 class Program
 {
+
+    [STAThread]
     public static int Main(string[] args)
     {
-        string url = args.Length > 0 ? args[0] : "https://www.example.com";
+        string url = "https://www.example.com";
 
         // Initialize application (menus, Dock, activation)
-        ApplicationCrossPlatform.Init();
+        var app = new Controls.Platform.Application();
 
-        if (!WebViewCrossPlatform.CreateWindow(url))
-        {
-            Console.Error.WriteLine("Native WK bridge not available. Build native/macos/libwkapp.dylib and native/macos/libwkwebview.dylib and retry.");
-            return 1;
-        }
+        var win = new Controls.Platform.Window();
+        app.AddWindow(win);
+        var webview = new Controls.Platform.WebView();
+        webview.Navigate(url);
+        webview.OnMessage += (m) => Console.WriteLine("[webview] " + m);
+        win.SetContent(webview);
 
-        WebViewCrossPlatform.OnMessage += (m) => Console.WriteLine("[webview] " + m);
-
-        ApplicationCrossPlatform.RunLoop();
-
-        WebViewCrossPlatform.Destroy();
+        app.RunLoop();
         return 0;
     }
 }
