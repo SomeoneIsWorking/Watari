@@ -1,26 +1,13 @@
 ﻿using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace Watari;
 
-public class Framework
+public class Framework(FrameworkOptions options)
 {
     public Types Types { get; } = new Types();
     public Server Server { get; } = new Server();
-    public FrameworkOptions Options { get; }
-
-    public Framework([CallerFilePath] string? callerFilePath = null)
-    {
-        Options = new FrameworkOptions
-        {
-            FrontendPath = Path.GetDirectoryName(callerFilePath!)!,
-            Dev = true
-        };
-    }
-
-    public Framework(FrameworkOptions options)
-    {
-        Options = options;
-    }
+    public FrameworkOptions Options { get; } = options;
 
     public bool Run(string[] args)
     {
@@ -29,6 +16,13 @@ public class Framework
             return Types.Generate();
         }
 
+        Server.Start(new ServerOptions
+        {
+            Dev = Options.Dev,
+            DevPort = Options.DevPort,
+            FrontendPath = Options.FrontendPath
+        }).GetAwaiter().GetResult();
+
         // Initialize application (menus, Dock, activation)
         var app = new Controls.Platform.Application();
         var win = new Controls.Platform.Window();
@@ -36,7 +30,10 @@ public class Framework
         var webview = new Controls.Platform.WebView();
         win.SetContent(webview);
 
-        var server = Server.Start(Options.Dev, Options.FrontendPath);
+        if (Options.Dev)
+        {
+            webview.Navigate($"http://localhost:{Options.DevPort}");
+        }
 
         app.RunLoop();
         return true;

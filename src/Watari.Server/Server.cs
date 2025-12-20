@@ -6,14 +6,24 @@ namespace Watari;
 public class Server
 {
     public NpmManager NpmManager { get; } = new NpmManager();
+    public WebApplication WebApplication { get; private set; } = null!;
 
-    public Task Start(bool dev, string frontendPath)
+    public async Task Start(ServerOptions options)
     {
-        if (dev)
+        if (options.Dev)
         {
-            NpmManager.StartDev(frontendPath);
+            await NpmManager.StartDev(options.FrontendPath, options.DevPort, options.CancellationToken);
         }
+        else
+        {
+            WebApplication webApplication = WebApplication.CreateBuilder().Build();
+            await webApplication.StartAsync(options.CancellationToken);
+        }
+    }
 
-        return WebApplication.CreateBuilder().Build().RunAsync();
+    public Server Stop(ServerOptions options)
+    {
+        _ = Start(options);
+        return this;
     }
 }

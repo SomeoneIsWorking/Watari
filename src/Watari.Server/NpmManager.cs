@@ -6,13 +6,17 @@ namespace Watari;
 
 public class NpmManager
 {
-    public void StartDev(string dir, CancellationToken cancellationToken = default)
+    public event EventHandler? Ready;
+
+    public async Task StartDev(string dir, int port, CancellationToken cancellationToken = default)
     {
+        Console.WriteLine("Starting npm dev server...");
+        var tsc = new TaskCompletionSource();
         // Start npm dev server logic here
         ProcessStartInfo startInfo = new()
         {
             FileName = "npm",
-            Arguments = "run dev",
+            Arguments = $"run dev -- --port {port}",
             WorkingDirectory = dir,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -26,20 +30,36 @@ public class NpmManager
         };
         process.OutputDataReceived += (sender, e) =>
         {
-            if (!string.IsNullOrEmpty(e.Data))
+            if (string.IsNullOrEmpty(e.Data))
             {
-                Console.WriteLine($"[npm stdout]: {e.Data}");
+                return;
             }
+            if (e.Data.Contains("ready in"))
+            {
+                Ready?.Invoke(this, EventArgs.Empty);
+                tsc.SetResult();
+            }
+            Console.WriteLine($"[npm stdout]: {e.Data}");
         };
         process.ErrorDataReceived += (sender, e) =>
         {
-            if (!string.IsNullOrEmpty(e.Data))
+            if (string.IsNullOrEmpty(e.Data))
             {
-                Console.WriteLine($"[npm stderr]: {e.Data}");
+                return;
             }
+            Console.WriteLine($"[npm stderr]: {e.Data}");
         };
+
         process.Start();
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
+        cancellationToken.Register(() =>
+        {
+            if (!process.HasExited)
+            {
+                process.Kill();
+            }
+        });
+        await tsc.Task;
     }
 }

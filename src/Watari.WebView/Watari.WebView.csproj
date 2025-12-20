@@ -8,18 +8,9 @@
     <RootNamespace>Watari</RootNamespace>
   </PropertyGroup>
 
-  <!-- Copy macOS native dylibs if present -->
-  <Target Name="CopyNativeMacDylibs" AfterTargets="Build">
-    <PropertyGroup>
-      <NativeAppliationDylib>$(MSBuildProjectDirectory)/native/macos/libapplication.dylib</NativeAppliationDylib>
-      <NativeWindowDylib>$(MSBuildProjectDirectory)/native/macos/libwindow.dylib</NativeWindowDylib>
-      <NativeWebViewDylib>$(MSBuildProjectDirectory)/native/macos/libwebview.dylib</NativeWebViewDylib>
-    </PropertyGroup>
-    <Message Importance="low" Text="Native app dylib path: $(NativeAppliationDylib)" />
-    <Message Importance="low" Text="Native webview window dylib path: $(NativeWindowDylib)" />
-    <Message Importance="low" Text="Native webview dylib path: $(NativeWebViewDylib)" />
-    <Copy SourceFiles="$(NativeAppliationDylib)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" Condition="Exists('$(NativeAppliationDylib)')" />
-    <Copy SourceFiles="$(NativeWindowDylib)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" Condition="Exists('$(NativeWindowDylib)')" />
-    <Copy SourceFiles="$(NativeWebViewDylib)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" Condition="Exists('$(NativeWebViewDylib)')" />
-  </Target>
+  <ItemGroup>
+    <Content Include="native/macos/*.dylib">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>

@@ -4,8 +4,7 @@
 #import <objc/runtime.h>
 #include <stdlib.h>
 
-__attribute__((visibility("default"))) CFTypeRef
-WebView_Create() {
+__attribute__((visibility("default"))) CFTypeRef WebView_Create() {
   @autoreleasepool {
     NSLog(@"[WebView_Create] creating WKWebView");
     WKWebViewConfiguration *config = [[WKWebViewConfiguration alloc] init];
@@ -17,22 +16,22 @@ WebView_Create() {
   }
 }
 
-__attribute__((visibility("default"))) void
-WebView_Navigate(void *viewHandle, const char *url) {
+__attribute__((visibility("default"))) void WebView_Navigate(void *viewHandle,
+                                                             const char *url) {
   @autoreleasepool {
     WKWebView *webView = (__bridge WKWebView *)viewHandle;
     NSString *nsurl = [NSString stringWithUTF8String:url];
     NSURL *u = [NSURL URLWithString:nsurl];
     NSLog(@"[WebView_Navigate] created NSURL: %@", u);
     NSURLRequest *req = [NSURLRequest requestWithURL:u];
-    NSLog(@"[WebView_Navigate] navigating WKWebView %p to URL: %@",
-          webView, nsurl);
+    NSLog(@"[WebView_Navigate] navigating WKWebView %p to URL: %@", webView,
+          nsurl);
     [webView loadRequest:req];
   }
 }
 
 __attribute__((visibility("default"))) void WebView_Eval(void *viewHandle,
-                                                               const char *js) {
+                                                         const char *js) {
   @autoreleasepool {
     WKWebView *webView = (__bridge WKWebView *)viewHandle;
     NSString *jsString = [NSString stringWithUTF8String:js];
@@ -40,18 +39,15 @@ __attribute__((visibility("default"))) void WebView_Eval(void *viewHandle,
         evaluateJavaScript:jsString
          completionHandler:^(id result, NSError *error) {
            if (error) {
-             NSLog(@"[WebView_Eval] JavaScript evaluation error: %@",
-                   error);
+             NSLog(@"[WebView_Eval] JavaScript evaluation error: %@", error);
            } else {
-             NSLog(@"[WebView_Eval] JavaScript evaluation result: %@",
-                   result);
+             NSLog(@"[WebView_Eval] JavaScript evaluation result: %@", result);
            }
          }];
   }
 }
 
-__attribute__((visibility("default"))) void
-WebView_Destroy(void *viewHandle) {
+__attribute__((visibility("default"))) void WebView_Destroy(void *viewHandle) {
   @autoreleasepool {
     if (!viewHandle)
       return;

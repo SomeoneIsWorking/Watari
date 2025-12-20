@@ -9,7 +9,7 @@ public class WebView
     {
         MacOS = new MacOS.WebView();
     }
-    public bool Navigate(string url) => MacOS != null && MacOS.Navigate(url);
-    public bool Eval(string js) => MacOS != null && MacOS.Eval(js);
-    public void Destroy() => MacOS?.Destroy();
+    public bool Navigate(string url) => MacOS!.Navigate(url);
+    public bool Eval(string js) => MacOS!.Eval(js);
+    public void Destroy() => MacOS!.Destroy();
 }

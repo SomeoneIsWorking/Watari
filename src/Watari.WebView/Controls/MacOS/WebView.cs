@@ -12,13 +12,13 @@ public class WebView
     }
     public bool Navigate(string url)
     {
-        WebViewBridge.Navigate(Handle, url ?? "about:blank");
+        WebViewBridge.Navigate(Handle, url);
         return true;
     }
 
     public bool Eval(string js)
     {
-        WebViewBridge.Eval(Handle, js ?? string.Empty);
+        WebViewBridge.Eval(Handle, js);
         return true;
     }
 
