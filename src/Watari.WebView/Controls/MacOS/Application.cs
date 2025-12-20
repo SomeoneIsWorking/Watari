@@ -1,7 +1,6 @@
-using System.Reflection.Metadata;
-using Watari.WebView.Bridge.MacOS;
+using Watari.Bridge.MacOS;
 
-namespace Watari.WebView.Controls.MacOS;
+namespace Watari.Controls.MacOS;
 
 internal class Application
 {

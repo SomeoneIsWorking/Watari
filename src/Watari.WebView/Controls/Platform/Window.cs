@@ -1,4 +1,4 @@
-namespace Watari.WebView.Controls.Platform;
+namespace Watari.Controls.Platform;
 
 public class Window
 {

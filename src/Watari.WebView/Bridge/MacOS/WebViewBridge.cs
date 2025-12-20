@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Watari.WebView.Bridge.MacOS;
+namespace Watari.Bridge.MacOS;
 
 internal static partial class WebViewBridge
 {

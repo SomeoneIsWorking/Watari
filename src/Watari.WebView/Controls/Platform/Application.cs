@@ -1,25 +1,28 @@
 
-namespace Watari.WebView.Controls.Platform;
+namespace Watari.Controls.Platform;
 
-internal class Application
+public class Application
 {
-    private readonly MacOS.Application _macApp;
-    private readonly List<Window> _windows = new List<Window>();
+    private readonly MacOS.Application? MacOS;
+    private readonly List<Window> _windows = [];
+    public IReadOnlyList<Window> Windows => _windows;
+    public Window? MainWindow { get; private set; }
 
     public Application()
     {
-        _macApp = new MacOS.Application();
+        MacOS = new MacOS.Application();
     }
 
-    public void RunLoop() => _macApp.RunLoop();
-    public void StopLoop() => _macApp.StopLoop();
-    
-    internal void AddWindow(Window window, bool mainWindow)
+    public void RunLoop() => MacOS!.RunLoop();
+    public void StopLoop() => MacOS!.StopLoop();
+
+    public void AddWindow(Window window, bool mainWindow)
     {
         _windows.Add(window);
         if (mainWindow)
         {
-            _macApp.SetMainWindow(window.MacOS!);
+            MacOS!.SetMainWindow(window.MacOS);
+            MainWindow = window;
         }
     }
 }

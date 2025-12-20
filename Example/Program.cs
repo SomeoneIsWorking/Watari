@@ -1,0 +1,1 @@
+﻿new Watari.Framework().Run(args);

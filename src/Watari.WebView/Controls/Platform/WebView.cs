@@ -1,12 +1,10 @@
-using Watari.WebView.Controls.MacOS;
+using Watari.Controls.MacOS;
 
-namespace Watari.WebView.Controls.Platform;
+namespace Watari.Controls.Platform;
 
 public class WebView
 {
     public MacOS.WebView? MacOS;
-    public Action<object>? OnMessage { get; internal set; }
-
     public WebView()
     {
         MacOS = new MacOS.WebView();
