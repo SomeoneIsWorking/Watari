@@ -3,29 +3,21 @@ using System.Text;
 using Watari.Types;
 
 namespace Watari;
-public class TypeGenerator
+
+public class TypeGenerator(TypeGeneratorOptions options)
 {
-    public bool Generate(TypeGeneratorOptions options)
+    private readonly TypeGeneratorOptions options = options;
+    private readonly HashSet<Type> _collectedTypes = new();
+
+    public bool Generate()
     {
         Console.WriteLine($"Generating TypeScript definitions in {options.OutputPath}...");
         if (options.ExposedTypes is not { Count: > 0 })
         {
             return false;
         }
-        var unhandledTypes = new HashSet<Type>();
-        foreach (var type in options.ExposedTypes)
-        {
-            var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                              .Where(m => !m.IsSpecialName && m.DeclaringType == type);
-            foreach (var method in methods)
-            {
-                CollectTypes(method.ReturnType, unhandledTypes, options);
-                foreach (var param in method.GetParameters())
-                {
-                    CollectTypes(param.ParameterType, unhandledTypes, options);
-                }
-            }
-        }
+
+        CollectTypes();
 
         var outputDir = Path.Combine(options.OutputPath, "src", "generated");
         Directory.CreateDirectory(outputDir);
@@ -42,9 +34,9 @@ public class TypeGenerator
             foreach (var method in methods)
             {
                 var paramList = string.Join(", ", method.GetParameters()
-                    .Select(p => $"{p.Name}: {MapType(p.ParameterType, options)}"));
+                    .Select(p => $"{p.Name}: {MapType(p.ParameterType)}"));
                 var paramNames = string.Join(", ", method.GetParameters().Select(p => p.Name));
-                var returnType = MapType(method.ReturnType, options);
+                var returnType = MapType(method.ReturnType);
                 sb.AppendLine($"    static {method.Name}({paramList}): Promise<{returnType}> {{");
                 var args = string.IsNullOrEmpty(paramNames) ? "" : $", {paramNames}";
                 sb.AppendLine($"        return watari_invoke<{returnType}>(\"{type.Name}.{method.Name}\"{args});");
@@ -58,12 +50,12 @@ public class TypeGenerator
         }
 
         var modelsSb = new StringBuilder();
-        foreach (var t in unhandledTypes.OrderBy(t => t.Name))
+        foreach (var t in _collectedTypes.OrderBy(t => t.Name))
         {
             modelsSb.AppendLine($"export interface {t.Name} {{");
             foreach (var prop in t.GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
-                modelsSb.AppendLine($"    {prop.Name}: {MapType(prop.PropertyType, options)};");
+                modelsSb.AppendLine($"    {prop.Name}: {MapType(prop.PropertyType)};");
             }
             modelsSb.AppendLine("}");
             modelsSb.AppendLine();
@@ -80,22 +72,62 @@ public class TypeGenerator
         return true;
     }
 
-    private void CollectTypes(Type t, HashSet<Type> collected, TypeGeneratorOptions options)
+    private void CollectTypes()
     {
-        if (collected.Contains(t) || IsPrimitive(t)) return;
+        foreach (var type in options.ExposedTypes)
+        {
+            var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                              .Where(m => !m.IsSpecialName && m.DeclaringType == type);
+            foreach (var method in methods)
+            {
+                CollectTypes(method.ReturnType);
+                foreach (var param in method.GetParameters())
+                {
+                    CollectTypes(param.ParameterType);
+                }
+            }
+        }
+    }
+
+    private void CollectTypes(Type t)
+    {
+        if (_collectedTypes.Contains(t) || IsPrimitive(t))
+        {
+            return;
+        }
+
         var handlerType = typeof(ITypeHandler<>).MakeGenericType(t);
-        var handler = options.Provider.GetService(handlerType) as ITypeHandler;
-        if (handler != null)
+
+        if (options.Provider.GetService(handlerType) is ITypeHandler handler)
         {
             var interfaceType = handler.GetType().GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITypeHandler<,>));
             var tsType = interfaceType.GetGenericArguments()[1];
-            CollectTypes(tsType, collected, options);
+            CollectTypes(tsType);
             return;
         }
-        collected.Add(t);
+
+        if (IsDictionary(t))
+        {
+            var dictInterface = t.GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>));
+            var keyType = dictInterface.GetGenericArguments()[0];
+            var valueType = dictInterface.GetGenericArguments()[1];
+            CollectTypes(keyType);
+            CollectTypes(valueType);
+            return;
+        }
+
+        if (IsEnumerable(t))
+        {
+            var enumInterface = t.GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+            var itemType = enumInterface.GetGenericArguments()[0];
+            CollectTypes(itemType);
+            return;
+        }
+
+        _collectedTypes.Add(t);
         foreach (var prop in t.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
-            CollectTypes(prop.PropertyType, collected, options);
+            CollectTypes(prop.PropertyType);
         }
     }
 
@@ -110,36 +142,11 @@ public class TypeGenerator
         return t.IsPrimitive || t == typeof(string) || t == typeof(decimal) || t == typeof(void);
     }
 
-    private static string MapType(Type type, TypeGeneratorOptions options)
+    private string MapType(Type type)
     {
-        var handlerType = typeof(ITypeHandler<>).MakeGenericType(type);
-        if (options.Provider.GetService(handlerType) is ITypeHandler temp)
-        {
-            var interfaceType = temp.GetType().GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITypeHandler<,>));
-            var tsType = interfaceType.GetGenericArguments()[1];
-            return MapType(tsType, options);
-        }
-        if (type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>)))
-        {
-            var dictInterface = type.GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>));
-            var keyType = dictInterface.GetGenericArguments()[0];
-            var valueType = dictInterface.GetGenericArguments()[1];
-            return $"Record<{MapType(keyType, options)}, {MapType(valueType, options)}>";
-        }
-        if (type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
-        {
-            var enumInterface = type.GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-            var itemType = enumInterface.GetGenericArguments()[0];
-            return $"{MapType(itemType, options)}[]";
-        }
-        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Task<>))
-        {
-            var innerType = type.GetGenericArguments()[0];
-            return MapType(innerType, options);
-        }
         if (type == typeof(int) || type == typeof(long) || type == typeof(short) || type == typeof(byte) ||
-            type == typeof(uint) || type == typeof(ulong) || type == typeof(ushort) || type == typeof(sbyte) ||
-            type == typeof(float) || type == typeof(double) || type == typeof(decimal))
+         type == typeof(uint) || type == typeof(ulong) || type == typeof(ushort) || type == typeof(sbyte) ||
+         type == typeof(float) || type == typeof(double) || type == typeof(decimal))
             return "number";
         if (type == typeof(string))
             return "string";
@@ -147,7 +154,44 @@ public class TypeGenerator
             return "boolean";
         if (type == typeof(void))
             return "void";
+
+        var handlerType = typeof(ITypeHandler<>).MakeGenericType(type);
+        if (options.Provider.GetService(handlerType) is ITypeHandler temp)
+        {
+            var interfaceType = temp.GetType().GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITypeHandler<,>));
+            var tsType = interfaceType.GetGenericArguments()[1];
+            return MapType(tsType);
+        }
+        if (IsDictionary(type))
+        {
+            var dictInterface = type.GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>));
+            var keyType = dictInterface.GetGenericArguments()[0];
+            var valueType = dictInterface.GetGenericArguments()[1];
+            return $"Record<{MapType(keyType)}, {MapType(valueType)}>";
+        }
+        if (IsEnumerable(type))
+        {
+            var enumInterface = type.GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+            var itemType = enumInterface.GetGenericArguments()[0];
+            return $"{MapType(itemType)}[]";
+        }
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Task<>))
+        {
+            var innerType = type.GetGenericArguments()[0];
+            return MapType(innerType);
+        }
+
         // For complex types, return the type name prefixed with models
         return "models." + type.Name;
+    }
+
+    private static bool IsEnumerable(Type type)
+    {
+        return type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+    }
+
+    private static bool IsDictionary(Type type)
+    {
+        return type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>));
     }
 }

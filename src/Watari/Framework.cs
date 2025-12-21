@@ -25,12 +25,12 @@ public class Framework(FrameworkOptions options)
         if (args.Any(x => x == "-g" || x == "--generate"))
         {
             var provider = services.BuildServiceProvider();
-            return new TypeGenerator().Generate(new TypeGeneratorOptions
+            return new TypeGenerator(new TypeGeneratorOptions
             {
                 OutputPath = Options.FrontendPath,
                 ExposedTypes = Options.ExposedTypes,
                 Provider = provider
-            });
+            }).Generate();
         }
 
         var serviceProvider = services.BuildServiceProvider();
