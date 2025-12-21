@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System.Reflection;
 using System.Text.Json;
-using Watari.Types;
 
 namespace Watari;
 

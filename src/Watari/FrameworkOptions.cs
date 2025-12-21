@@ -1,4 +1,3 @@
-using Watari.Types;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Watari;

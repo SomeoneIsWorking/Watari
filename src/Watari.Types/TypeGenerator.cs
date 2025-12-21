@@ -99,26 +99,38 @@ public class TypeGenerator
         }
     }
 
-    private string ToCamelCase(string s)
+    private static string ToCamelCase(string s)
     {
         if (string.IsNullOrEmpty(s)) return s;
         return char.ToLower(s[0]) + s[1..];
     }
 
-    private bool IsPrimitive(Type t)
+    private static bool IsPrimitive(Type t)
     {
         return t.IsPrimitive || t == typeof(string) || t == typeof(decimal) || t == typeof(void);
     }
 
-    private string MapType(Type type, TypeGeneratorOptions options)
+    private static string MapType(Type type, TypeGeneratorOptions options)
     {
         var handlerType = typeof(ITypeHandler<>).MakeGenericType(type);
-        var temp = options.Provider.GetService(handlerType) as ITypeHandler;
-        if (temp != null)
+        if (options.Provider.GetService(handlerType) is ITypeHandler temp)
         {
             var interfaceType = temp.GetType().GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITypeHandler<,>));
             var tsType = interfaceType.GetGenericArguments()[1];
             return MapType(tsType, options);
+        }
+        if (type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>)))
+        {
+            var dictInterface = type.GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>));
+            var keyType = dictInterface.GetGenericArguments()[0];
+            var valueType = dictInterface.GetGenericArguments()[1];
+            return $"Record<{MapType(keyType, options)}, {MapType(valueType, options)}>";
+        }
+        if (type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
+        {
+            var enumInterface = type.GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+            var itemType = enumInterface.GetGenericArguments()[0];
+            return $"{MapType(itemType, options)}[]";
         }
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Task<>))
         {

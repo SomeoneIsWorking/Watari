@@ -1,5 +1,3 @@
-using Watari.Types;
-
 namespace Watari;
 
 public class ServerOptions
