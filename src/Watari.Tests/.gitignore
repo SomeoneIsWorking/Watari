@@ -1,0 +1,4 @@
+/bin
+/obj
+*.dylib
+.DS_Store

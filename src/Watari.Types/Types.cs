@@ -82,7 +82,14 @@ public class Types
 
     private void CollectTypes(Type t, HashSet<Type> collected, TypeGeneratorOptions options)
     {
-        if (collected.Contains(t) || IsPrimitive(t) || options.Handlers.ContainsKey(t)) return;
+        if (collected.Contains(t) || IsPrimitive(t)) return;
+        if (options.Handlers.TryGetValue(t, out var handler))
+        {
+            var interfaceType = handler.GetType().GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITypeHandler<,>));
+            var tsType = interfaceType.GetGenericArguments()[1];
+            CollectTypes(tsType, collected, options);
+            return;
+        }
         collected.Add(t);
         foreach (var prop in t.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
@@ -105,9 +112,14 @@ public class Types
     {
         if (options.Handlers.TryGetValue(type, out var temp))
         {
-            dynamic handler = temp;
-            var tsType = handler.GetType().GetGenericArguments()[1];
+            var interfaceType = temp.GetType().GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITypeHandler<,>));
+            var tsType = interfaceType.GetGenericArguments()[1];
             return MapType(tsType, options);
+        }
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Task<>))
+        {
+            var innerType = type.GetGenericArguments()[0];
+            return MapType(innerType, options);
         }
         if (type == typeof(int) || type == typeof(long) || type == typeof(short) || type == typeof(byte) ||
             type == typeof(uint) || type == typeof(ulong) || type == typeof(ushort) || type == typeof(sbyte) ||

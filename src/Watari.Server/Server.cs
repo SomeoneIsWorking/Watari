@@ -8,11 +8,38 @@ using System.Text.Json.Serialization;
 
 namespace Watari;
 
-public class Server(ServerOptions options)
+public class Server
 {
     public NpmManager NpmManager { get; } = new NpmManager();
     public WebApplication WebApplication { get; private set; } = null!;
-    public ServerOptions Options { get; } = options;
+    public ServerOptions Options { get; }
+    private JsonSerializerOptions _jsonOptions;
+
+    public Server(ServerOptions options)
+    {
+        Options = options;
+        _jsonOptions = BuildSerializerOptions();
+    }
+
+    private JsonSerializerOptions BuildSerializerOptions()
+    {
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = null,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+        foreach (var kvp in Options.Handlers)
+        {
+            var type = kvp.Key;
+            var handler = kvp.Value;
+            var interfaceType = handler.GetType().GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITypeHandler<,>));
+            var genericArgs = interfaceType.GetGenericArguments();
+            var converterType = typeof(TypeHandlerConverter<,>).MakeGenericType(genericArgs[0], genericArgs[1]);
+            var converter = Activator.CreateInstance(converterType, handler);
+            options.Converters.Add((JsonConverter)converter!);
+        }
+        return options;
+    }
 
     public async Task Start()
     {
@@ -36,9 +63,22 @@ public class Server(ServerOptions options)
         }
     }
 
+    public object? ParseInput(string json, Type type)
+    {
+        var jsonElement = JsonSerializer.Deserialize<JsonElement>(json);
+        return ResolveInput(type, jsonElement);
+    }
+
+    public string SerializeOutput(object? value)
+    {
+        var type = value?.GetType() ?? typeof(void);
+        var resolved = ResolveResponse(type, value);
+        return JsonSerializer.Serialize(resolved, _jsonOptions);
+    }
+
     private async Task<IResult> HandleRequest(HttpContext context)
     {
-        var request = await JsonSerializer.DeserializeAsync<InvokeRequest>(context.Request.Body);
+        var request = await JsonSerializer.DeserializeAsync<InvokeRequest>(context.Request.Body, _jsonOptions);
         if (request == null) return Results.BadRequest();
 
         var parts = request.Method.Split('.');
@@ -67,21 +107,17 @@ public class Server(ServerOptions options)
         var instance = Activator.CreateInstance(type);
         var result = method.Invoke(instance, args);
 
-        object? response = await ResolveResponse(method.ReturnType, result);
+        object? response = ResolveResponse(method.ReturnType, result);
 
         if (response == null)
         {
             return Results.NoContent();
         }
 
-        return Results.Json(response, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = null,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-        });
+        return Results.Json(response, _jsonOptions);
     }
 
-    private async Task<object?> ResolveResponse(Type type, object? value)
+    private object? ResolveResponse(Type type, object? value)
     {
         if (value == null) return null;
 
@@ -93,23 +129,15 @@ public class Server(ServerOptions options)
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Task<>))
         {
             var task = (Task)value;
-            await task;
             var resultProperty = task.GetType().GetProperty("Result");
             var actualResult = resultProperty?.GetValue(task);
             var innerType = type.GetGenericArguments()[0];
-            return await ResolveResponse(innerType, actualResult);
+            return ResolveResponse(innerType, actualResult);
         }
         else if (type == typeof(Task))
         {
             var task = (Task)value;
-            await task;
             return null; // Indicates NoContent
-        }
-        else if (Options.Handlers.TryGetValue(type, out var handler))
-        {
-            var tsValue = handler.ToTypeScript(value);
-            var tsType = handler.GetType().GetGenericArguments()[1];
-            return await ResolveResponse(tsType, tsValue);
         }
         else
         {
@@ -119,16 +147,6 @@ public class Server(ServerOptions options)
 
     private object? ResolveInput(Type type, JsonElement json)
     {
-        if (Options.Handlers.TryGetValue(type, out var handler))
-        {
-            var tsType = handler.GetType().GetGenericArguments()[1];
-            var tsValue = ResolveInput(tsType, json);
-            var csharpValue = handler.FromTypeScript(tsValue);
-            return csharpValue;
-        }
-        else
-        {
-            return JsonSerializer.Deserialize(json.GetRawText(), type);
-        }
+        return JsonSerializer.Deserialize(json.GetRawText(), type, _jsonOptions);
     }
 }
