@@ -13,4 +13,12 @@ internal static partial class WindowBridge
     [System.Runtime.InteropServices.LibraryImport("libgtk-3.so.0", EntryPoint = "gtk_container_add")]
     [System.Runtime.InteropServices.UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
     internal static partial void gtk_container_add(IntPtr container, IntPtr widget);
+
+    [System.Runtime.InteropServices.LibraryImport("libgtk-3.so.0", EntryPoint = "gtk_window_move")]
+    [System.Runtime.InteropServices.UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+    internal static partial void gtk_window_move(IntPtr window, int x, int y);
+
+    [System.Runtime.InteropServices.LibraryImport("libgtk-3.so.0", EntryPoint = "gtk_window_get_position")]
+    [System.Runtime.InteropServices.UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+    internal static partial void gtk_window_get_position(IntPtr window, out int x, out int y);
 }

@@ -17,8 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Watari.Server\Watari.Server.csproj" />
-    <ProjectReference Include="..\Watari.Types\Watari.Types.csproj" />
     <ProjectReference Include="..\Watari\Watari.csproj" />
   </ItemGroup>
 

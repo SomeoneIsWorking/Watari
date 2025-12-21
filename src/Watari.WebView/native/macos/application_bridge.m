@@ -77,3 +77,24 @@ Application_SetMainWindow(void *app, void *window) {
     NSLog(@"[ApplicationBridge setKeyWindow] set key window %p", nsWindow);
   }
 }
+
+__attribute__((visibility("default"))) void
+Application_RunOnMainThread(void *app, void (*callback)(void)) {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    callback();
+  });
+}
+
+__attribute__((visibility("default"))) void
+Application_AddMenuItem(void *app, const char *title) {
+  @autoreleasepool {
+    NSApplication *application = (__bridge NSApplication *)app;
+    NSMenu *menubar = [application mainMenu];
+    NSMenuItem *appMenuItem = [menubar itemAtIndex:0];
+    NSMenu *appMenu = [appMenuItem submenu];
+    NSMenuItem *newItem = [[NSMenuItem alloc] initWithTitle:[NSString stringWithUTF8String:title]
+                                                     action:@selector(dummyAction:)
+                                              keyEquivalent:@""];
+    [appMenu addItem:newItem];
+  }
+}

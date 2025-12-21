@@ -21,4 +21,15 @@ public class Window : IWindow
         }
         WindowBridge.gtk_container_add(Handle, linuxWebView.Handle);
     }
+
+    public void Move(int x, int y)
+    {
+        WindowBridge.gtk_window_move(Handle, x, y);
+    }
+
+    public (int x, int y) GetPosition()
+    {
+        WindowBridge.gtk_window_get_position(Handle, out int x, out int y);
+        return (x, y);
+    }
 }

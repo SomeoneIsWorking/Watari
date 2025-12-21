@@ -1,10 +1,15 @@
+using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Watari.Controls.Interfaces;
 
 namespace Watari.Controls.Windows;
 
 internal class Application : IApplication
 {
+    private const uint WM_USER = 0x0400;
+    private const uint WM_RUN_ON_MAIN_THREAD = WM_USER + 1;
+
     [StructLayout(LayoutKind.Sequential)]
     public struct MSG
     {
@@ -35,11 +40,20 @@ internal class Application : IApplication
     [DllImport("user32.dll")]
     private static extern void PostQuitMessage(int nExitCode);
 
+    [DllImport("user32.dll")]
+    private static extern bool PostThreadMessage(uint idThread, uint Msg, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("kernel32.dll")]
+    private static extern uint GetCurrentThreadId();
+
+    private readonly ConcurrentQueue<Action> _mainThreadActions = new();
+    private readonly uint _threadId;
+
     public IntPtr Handle { get; } = IntPtr.Zero;
 
     public Application()
     {
-        // No init needed
+        _threadId = GetCurrentThreadId();
     }
 
     public void SetMainWindow(IWindow window)
@@ -52,13 +66,34 @@ internal class Application : IApplication
         MSG msg;
         while (GetMessage(out msg, IntPtr.Zero, 0, 0))
         {
-            TranslateMessage(ref msg);
-            DispatchMessage(ref msg);
+            if (msg.message == WM_RUN_ON_MAIN_THREAD)
+            {
+                if (_mainThreadActions.TryDequeue(out var action))
+                {
+                    action();
+                }
+            }
+            else
+            {
+                TranslateMessage(ref msg);
+                DispatchMessage(ref msg);
+            }
         }
     }
 
     public void StopLoop()
     {
         PostQuitMessage(0);
+    }
+
+    public void RunOnMainThread(Action action)
+    {
+        _mainThreadActions.Enqueue(action);
+        PostThreadMessage(_threadId, WM_RUN_ON_MAIN_THREAD, IntPtr.Zero, IntPtr.Zero);
+    }
+
+    public void AddMenuItem(string title)
+    {
+        // No op for Windows
     }
 }

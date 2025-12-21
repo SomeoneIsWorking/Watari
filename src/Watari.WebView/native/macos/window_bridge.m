@@ -60,6 +60,27 @@ Window_SetContent(void *windowHandle, void *viewHandle) {
   }
 }
 
+__attribute__((visibility("default"))) void
+Window_Move(void *windowHandle, int x, int y) {
+  @autoreleasepool {
+    NSWindow *window = (__bridge NSWindow *)windowHandle;
+    NSPoint origin = NSMakePoint(x, y);
+    [window setFrameOrigin:origin];
+    NSLog(@"[Window_Move] moved window %p to (%d, %d)", window, x, y);
+  }
+}
+
+__attribute__((visibility("default"))) void
+Window_GetPosition(void *windowHandle, int *x, int *y) {
+  @autoreleasepool {
+    NSWindow *window = (__bridge NSWindow *)windowHandle;
+    NSRect frame = [window frame];
+    *x = (int)frame.origin.x;
+    *y = (int)frame.origin.y;
+    NSLog(@"[Window_GetPosition] window %p at (%d, %d)", window, *x, *y);
+  }
+}
+
 __attribute__((visibility("default"))) void Window_Destroy(void *windowHandle) {
   @autoreleasepool {
     if (!windowHandle)

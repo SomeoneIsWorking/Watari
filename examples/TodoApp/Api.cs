@@ -1,9 +1,11 @@
 using System.Text.Json;
+using Watari;
 
-public class Api
+public class Api(WatariContext context)
 {
     private static List<TodoItem> _todos = new();
     private static readonly string _dataFile = "todos.json";
+    private readonly WatariContext _context = context;
 
     static Api()
     {
@@ -65,6 +67,30 @@ public class Api
     public string Hello(string name)
     {
         return $"Hello, {name}!";
+    }
+
+    public void MoveWindowUp()
+    {
+        var (x, y) = _context.MainWindow!.GetPosition();
+        _context.MainWindow.Move(x, y - 50);
+    }
+
+    public void MoveWindowDown()
+    {
+        var (x, y) = _context.MainWindow!.GetPosition();
+        _context.MainWindow.Move(x, y + 50);
+    }
+
+    public void MoveWindowLeft()
+    {
+        var (x, y) = _context.MainWindow!.GetPosition();
+        _context.MainWindow.Move(x - 50, y);
+    }
+
+    public void MoveWindowRight()
+    {
+        var (x, y) = _context.MainWindow!.GetPosition();
+        _context.MainWindow.Move(x + 50, y);
     }
 
     public X GetX(Y y)

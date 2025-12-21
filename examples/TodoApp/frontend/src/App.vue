@@ -57,6 +57,22 @@ const toggleCompleted = async (todo: TodoItem) => {
   await updateTodo(todo.Id, todo.Text, !todo.Completed)
 }
 
+const moveWindowUp = async () => {
+  await Api.MoveWindowUp()
+}
+
+const moveWindowDown = async () => {
+  await Api.MoveWindowDown()
+}
+
+const moveWindowLeft = async () => {
+  await Api.MoveWindowLeft()
+}
+
+const moveWindowRight = async () => {
+  await Api.MoveWindowRight()
+}
+
 onMounted(() => {
   loadTodos()
 })
@@ -65,6 +81,15 @@ onMounted(() => {
 <template>
   <div class="app">
     <h1>Todo App</h1>
+    
+    <div class="window-controls">
+      <button @click="moveWindowUp" class="control-button">↑</button>
+      <div class="horizontal-controls">
+        <button @click="moveWindowLeft" class="control-button">←</button>
+        <button @click="moveWindowRight" class="control-button">→</button>
+      </div>
+      <button @click="moveWindowDown" class="control-button">↓</button>
+    </div>
     
     <div class="add-todo">
       <input 
@@ -107,6 +132,33 @@ onMounted(() => {
 h1 {
   text-align: center;
   color: #333;
+}
+
+.window-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.horizontal-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.control-button {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.control-button:hover {
+  background-color: #1976D2;
 }
 
 .add-todo {

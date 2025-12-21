@@ -7,6 +7,8 @@ public class Window
 {
     public IWindow WindowImpl { get; }
 
+    public IApplication? Application { get; set; }
+
     public Window()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -19,7 +21,7 @@ public class Window
         }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            WindowImpl = new Watari.Controls.Windows.Window();
+            WindowImpl = new Windows.Window();
         }
         else
         {
@@ -30,5 +32,15 @@ public class Window
     public void SetContent(WebView webview)
     {
         WindowImpl.SetContent(webview.WebViewImpl);
+    }
+
+    public void Move(int x, int y)
+    {
+        Application?.RunOnMainThread(() => WindowImpl.Move(x, y));
+    }
+
+    public (int x, int y) GetPosition()
+    {
+        return WindowImpl.GetPosition();
     }
 }

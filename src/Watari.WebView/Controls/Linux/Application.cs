@@ -20,4 +20,14 @@ internal class Application : IApplication
     public void RunLoop() => ApplicationBridge.gtk_main();
 
     public void StopLoop() => ApplicationBridge.gtk_main_quit();
+
+    public void RunOnMainThread(Action action)
+    {
+        ApplicationBridge.g_idle_add((data) => { action(); return 0; }, IntPtr.Zero);
+    }
+
+    public void AddMenuItem(string title)
+    {
+        // No op for GTK
+    }
 }

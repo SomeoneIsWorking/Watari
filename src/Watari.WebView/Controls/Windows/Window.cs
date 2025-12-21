@@ -60,6 +60,21 @@ public class Window : IWindow
         ShowWindow(Handle, 5); // SW_SHOW
     }
 
+    [DllImport("user32.dll")]
+    private static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
     public void SetContent(IWebView webview)
     {
         if (webview is not WebView windowsWebView)
@@ -67,5 +82,20 @@ public class Window : IWindow
             throw new ArgumentException("webview must be of type Windows.WebView");
         }
         windowsWebView.SetParentHandle(Handle);
+    }
+
+    public void Move(int x, int y)
+    {
+        // Get current size
+        GetWindowRect(Handle, out RECT rect);
+        int width = rect.Right - rect.Left;
+        int height = rect.Bottom - rect.Top;
+        MoveWindow(Handle, x, y, width, height, true);
+    }
+
+    public (int x, int y) GetPosition()
+    {
+        GetWindowRect(Handle, out RECT rect);
+        return (rect.Left, rect.Top);
     }
 }

@@ -34,6 +34,10 @@ public class Application
     public void RunLoop() => _application.RunLoop();
     public void StopLoop() => _application.StopLoop();
 
+    public void RunOnMainThread(Action action) => _application.RunOnMainThread(action);
+
+    public void AddMenuItem(string title) => _application.AddMenuItem(title);
+
     public void AddWindow(Window window, bool mainWindow)
     {
         _windows.Add(window);
@@ -42,5 +46,6 @@ public class Application
             _application.SetMainWindow(window.WindowImpl);
             MainWindow = window;
         }
+        window.Application = _application;
     }
 }

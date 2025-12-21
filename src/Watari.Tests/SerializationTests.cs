@@ -64,8 +64,8 @@ public class SerializationTests
             ExposedTypes = exposedTypes,
             Provider = provider
         };
-        var types = new TypeGenerator();
-        var result = types.Generate(options);
+        var types = new TypeGenerator(options);
+        var result = types.Generate();
         Assert.True(result);
 
         // Check if files are generated

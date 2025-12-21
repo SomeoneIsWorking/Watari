@@ -22,6 +22,12 @@ public class Framework(FrameworkOptions options)
         Options.ConfigureServices?.Invoke(services);
         services.AddTransient<Server>();
 
+        // Initialize application early for DI
+        var app = new Controls.Platform.Application();
+        var win = new Controls.Platform.Window();
+        var context = new WatariContext { MainWindow = win };
+        services.AddSingleton(context);
+
         if (args.Any(x => x == "-g" || x == "--generate"))
         {
             var provider = services.BuildServiceProvider();
@@ -38,8 +44,6 @@ public class Framework(FrameworkOptions options)
         server.Start().GetAwaiter().GetResult();
 
         // Initialize application (menus, Dock, activation)
-        var app = new Controls.Platform.Application();
-        var win = new Controls.Platform.Window();
         app.AddWindow(win, true);
         var webview = new Controls.Platform.WebView();
         win.SetContent(webview);

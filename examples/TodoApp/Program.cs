@@ -4,4 +4,3 @@
     .SetFrontendPathRelative("frontend")
     .Build()
     .Run(args);
-

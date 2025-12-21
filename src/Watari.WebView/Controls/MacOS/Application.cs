@@ -8,7 +8,7 @@ internal class Application : IApplication
     public IntPtr Handle { get; }
     public Application()
     {
-        Handle = AppliationBridge.Init();
+        Handle = ApplicationBridge.Init();
     }
 
     public void SetMainWindow(IWindow window)
@@ -17,9 +17,19 @@ internal class Application : IApplication
         {
             throw new ArgumentException("window must be of type MacOS.Window");
         }
-        AppliationBridge.SetMainWindow(Handle, macosWindow.Handle);
+        ApplicationBridge.SetMainWindow(Handle, macosWindow.Handle);
     }
 
-    public void RunLoop() => AppliationBridge.RunLoop(Handle);
-    public void StopLoop() => AppliationBridge.StopLoop(Handle);
+    public void RunLoop() => ApplicationBridge.RunLoop(Handle);
+    public void StopLoop() => ApplicationBridge.StopLoop(Handle);
+
+    public void RunOnMainThread(Action action)
+    {
+        ApplicationBridge.RunOnMainThread(Handle, () => action());
+    }
+
+    public void AddMenuItem(string title)
+    {
+        ApplicationBridge.AddMenuItem(Handle, title);
+    }
 }
