@@ -1,4 +1,5 @@
 
+using System.Runtime.InteropServices;
 using Watari.Controls.Interfaces;
 
 namespace Watari.Controls.Platform;
@@ -12,7 +13,22 @@ public class Application
 
     public Application()
     {
-        _application = new MacOS.Application();
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            _application = new MacOS.Application();
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            _application = new Linux.Application();
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            _application = new Windows.Application();
+        }
+        else
+        {
+            throw new PlatformNotSupportedException("Unsupported platform");
+        }
     }
 
     public void RunLoop() => _application.RunLoop();
