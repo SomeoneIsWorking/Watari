@@ -1,5 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Watari.Types;
 
 namespace Watari;
 
@@ -9,26 +11,33 @@ public class Framework(FrameworkOptions options)
 
     public bool Run(string[] args)
     {
+        var services = Options.Services;
+        services.AddSingleton<TypeConverter>();
+        services.Configure<ServerOptions>(serverOptions =>
+        {
+            serverOptions.Dev = Options.Dev;
+            serverOptions.DevPort = Options.DevPort;
+            serverOptions.ServerPort = Options.ServerPort;
+            serverOptions.FrontendPath = Options.FrontendPath;
+            serverOptions.ExposedTypes = Options.ExposedTypes;
+        });
+        Options.ConfigureServices?.Invoke(services);
+        services.AddTransient<Server>();
+
         if (args.Any(x => x == "-g" || x == "--generate"))
         {
-            return new Types().Generate(new TypeGeneratorOptions
+            var provider = services.BuildServiceProvider();
+            return new TypeGenerator().Generate(new TypeGeneratorOptions
             {
                 OutputPath = Options.FrontendPath,
                 ExposedTypes = Options.ExposedTypes,
-                Handlers = Options.Handlers
-
+                Provider = provider
             });
         }
 
-        new Server(new ServerOptions
-        {
-            Dev = Options.Dev,
-            DevPort = Options.DevPort,
-            ServerPort = Options.ServerPort,
-            FrontendPath = Options.FrontendPath,
-            ExposedTypes = Options.ExposedTypes,
-            Handlers = Options.Handlers
-        }).Start().GetAwaiter().GetResult();
+        var serviceProvider = services.BuildServiceProvider();
+        var server = serviceProvider.GetRequiredService<Server>();
+        server.Start().GetAwaiter().GetResult();
 
         // Initialize application (menus, Dock, activation)
         var app = new Controls.Platform.Application();

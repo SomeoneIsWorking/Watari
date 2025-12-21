@@ -1,17 +1,11 @@
-
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Watari;
+namespace Watari.Types;
 
-public class TypeHandlerConverter<T, U> : JsonConverter<T>
+public class TypeHandlerConverter<T, U>(ITypeHandler<T, U> handler) : JsonConverter<T>
 {
-    private readonly ITypeHandler<T, U> _handler;
-
-    public TypeHandlerConverter(ITypeHandler<T, U> handler)
-    {
-        _handler = handler;
-    }
+    private readonly ITypeHandler<T, U> _handler = handler;
 
     public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {

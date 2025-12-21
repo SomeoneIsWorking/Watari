@@ -1,9 +1,9 @@
 using System.Reflection;
 using System.Text;
+using Watari.Types;
 
 namespace Watari;
-
-public class Types
+public class TypeGenerator
 {
     public bool Generate(TypeGeneratorOptions options)
     {
@@ -83,7 +83,9 @@ public class Types
     private void CollectTypes(Type t, HashSet<Type> collected, TypeGeneratorOptions options)
     {
         if (collected.Contains(t) || IsPrimitive(t)) return;
-        if (options.Handlers.TryGetValue(t, out var handler))
+        var handlerType = typeof(ITypeHandler<>).MakeGenericType(t);
+        var handler = options.Provider.GetService(handlerType) as ITypeHandler;
+        if (handler != null)
         {
             var interfaceType = handler.GetType().GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITypeHandler<,>));
             var tsType = interfaceType.GetGenericArguments()[1];
@@ -110,7 +112,9 @@ public class Types
 
     private string MapType(Type type, TypeGeneratorOptions options)
     {
-        if (options.Handlers.TryGetValue(type, out var temp))
+        var handlerType = typeof(ITypeHandler<>).MakeGenericType(type);
+        var temp = options.Provider.GetService(handlerType) as ITypeHandler;
+        if (temp != null)
         {
             var interfaceType = temp.GetType().GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITypeHandler<,>));
             var tsType = interfaceType.GetGenericArguments()[1];

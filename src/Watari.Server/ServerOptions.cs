@@ -1,3 +1,5 @@
+using Watari.Types;
+
 namespace Watari;
 
 public class ServerOptions
@@ -8,5 +10,4 @@ public class ServerOptions
     public required string FrontendPath { get; set; }
     public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
     public required List<Type> ExposedTypes { get; set; }
-    public required Dictionary<Type, ITypeHandler> Handlers { get; init; }
 }

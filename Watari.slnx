@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Solution>
+  <Project Path="Example/Example.csproj" />
+  <Project Path="src/Watari/Watari.csproj" />
+  <Project Path="src/Watari.Server/Watari.Server.csproj" />
+  <Project Path="src/Watari.Tests/Watari.Tests.csproj" />
+  <Project Path="src/Watari.Types/Watari.Types.csproj" />
+  <Project Path="src/Watari.WebView/Watari.WebView.csproj" />
+</Solution>

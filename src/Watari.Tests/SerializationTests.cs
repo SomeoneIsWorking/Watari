@@ -1,7 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Watari;
+using Watari.Types;
 using Xunit;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Watari.Tests;
 
@@ -10,30 +12,22 @@ public class SerializationTests
     [Fact]
     public void TestNestedTypeWithHandler()
     {
-        // Define types
         var xHandler = new XHandler();
-        var handlers = new Dictionary<Type, ITypeHandler>
-        {
-            { typeof(X), xHandler }
-        };
+        var services = new ServiceCollection();
+        services.AddSingleton(typeof(ITypeHandler<X>), xHandler);
+        var provider = services.BuildServiceProvider();
 
-        // Create Server instance
-        var options = new ServerOptions
-        {
-            Handlers = handlers,
-            FrontendPath = "/tmp",
-            ExposedTypes = new List<Type>()
-        };
-        var server = new Server(options);
+        // Create TypeConverter instance
+        var helper = new TypeConverter(provider);
 
         // Test serialization of Z containing X
         var z = new Z { MyProperty = new X { Value = 42 } };
-        var json = server.SerializeOutput(z);
+        var json = helper.SerializeOutput(z);
         // Should serialize X as Y: { Value: 42 }
         Assert.Contains("\"Value\":42", json);
 
         // Test deserialization
-        var deserializedZ = (Z?)server.ParseInput(json, typeof(Z));
+        var deserializedZ = (Z?)helper.ParseInput(json, typeof(Z));
         Assert.NotNull(deserializedZ);
         Assert.NotNull(deserializedZ.MyProperty);
         Assert.Equal(42, deserializedZ.MyProperty.Value);
@@ -44,24 +38,17 @@ public class SerializationTests
     {
         // Test serialization of Task<X>
         var xHandler = new XHandler();
-        var handlers = new Dictionary<Type, ITypeHandler>
-        {
-            { typeof(X), xHandler }
-        };
-        var options = new ServerOptions
-        {
-            Handlers = handlers,
-            FrontendPath = "/tmp",
-            ExposedTypes = new List<Type>()
-        };
-        var server = new Server(options);
+        var services = new ServiceCollection();
+        services.AddSingleton(typeof(ITypeHandler<X>), xHandler);
+        var provider = services.BuildServiceProvider();
+        var helper = new TypeConverter(provider);
 
         var taskX = Task.FromResult(new X { Value = 42 });
-        var json = server.SerializeOutput(taskX);
+        var json = helper.SerializeOutput(taskX);
         Assert.Contains("\"Value\":42", json);
 
         // Deserialize back
-        var deserializedX = (X?)server.ParseInput(json, typeof(X));
+        var deserializedX = (X?)helper.ParseInput(json, typeof(X));
         Assert.NotNull(deserializedX);
         Assert.Equal(42, deserializedX.Value);
     }
@@ -70,18 +57,17 @@ public class SerializationTests
     public void TestTypeScriptGeneration()
     {
         var xHandler = new XHandler();
-        var handlers = new Dictionary<Type, ITypeHandler>
-        {
-            { typeof(X), xHandler }
-        };
+        var services = new ServiceCollection();
+        services.AddSingleton(typeof(ITypeHandler<X>), xHandler);
+        var provider = services.BuildServiceProvider();
         var exposedTypes = new List<Type> { typeof(TestApi) };
         var options = new TypeGeneratorOptions
         {
             OutputPath = Path.GetTempPath(),
             ExposedTypes = exposedTypes,
-            Handlers = handlers
+            Provider = provider
         };
-        var types = new Types();
+        var types = new TypeGenerator();
         var result = types.Generate(options);
         Assert.True(result);
 
