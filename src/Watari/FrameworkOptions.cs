@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Watari;
@@ -8,6 +9,6 @@ public class FrameworkOptions
     public int DevPort { get; set; } = 8983;
     public int ServerPort { get; set; } = 7533;
     public List<Type> ExposedTypes { get; } = [];
-    public Action<IServiceCollection>? ConfigureServices { get; set; }
+    public ICollection<JsonConverter> JsonConverters { get; } = [];
     public ServiceCollection Services { get; } = new();
 }

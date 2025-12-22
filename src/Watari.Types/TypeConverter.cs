@@ -1,14 +1,12 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Microsoft.Extensions.DependencyInjection;
-using Watari.Types;
 
 namespace Watari;
 
-public class TypeConverter(IServiceProvider provider)
+public class TypeConverter(ICollection<JsonConverter> typeHandlers)
 {
-    private readonly IServiceProvider _provider = provider;
     private JsonSerializerOptions? _jsonOptions;
+    public JsonSerializerOptions JsonOptions => _jsonOptions ??= BuildSerializerOptions();
 
     private JsonSerializerOptions BuildSerializerOptions()
     {
@@ -17,14 +15,10 @@ public class TypeConverter(IServiceProvider provider)
             PropertyNamingPolicy = null,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
-        var typeHandlers = _provider.GetServices<ITypeHandler>();
-        foreach (var handler in typeHandlers)
+
+        foreach (var converter in typeHandlers)
         {
-            var interfaceType = handler.GetType().GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITypeHandler<,>));
-            var genericArgs = interfaceType.GetGenericArguments();
-            var converterType = typeof(TypeHandlerConverter<,>).MakeGenericType(genericArgs[0], genericArgs[1]);
-            var converter = Activator.CreateInstance(converterType, handler);
-            options.Converters.Add((JsonConverter)converter!);
+            options.Converters.Add(converter);
         }
         return options;
     }
@@ -74,6 +68,4 @@ public class TypeConverter(IServiceProvider provider)
     {
         return JsonSerializer.Deserialize(json.GetRawText(), type, JsonOptions);
     }
-
-    public JsonSerializerOptions JsonOptions => _jsonOptions ??= BuildSerializerOptions();
 }

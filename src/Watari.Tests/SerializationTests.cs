@@ -9,13 +9,12 @@ public class SerializationTests
     [Fact]
     public void TestNestedTypeWithHandler()
     {
-        var xHandler = new XHandler();
-        var services = new ServiceCollection();
-        services.AddSingleton(typeof(ITypeHandler<X>), xHandler);
-        var provider = services.BuildServiceProvider();
+        var builder = new FrameworkBuilder()
+            .AddHandler<X, Y, XHandler>()
+            .Build();
 
         // Create TypeConverter instance
-        var helper = new TypeConverter(provider);
+        var helper = new TypeConverter(builder.Options.JsonConverters);
 
         // Test serialization of Z containing X
         var z = new Z { MyProperty = new X { Value = 42 } };
@@ -33,12 +32,10 @@ public class SerializationTests
     [Fact]
     public void TestAsyncResponse()
     {
-        // Test serialization of Task<X>
-        var xHandler = new XHandler();
-        var services = new ServiceCollection();
-        services.AddSingleton(typeof(ITypeHandler<X>), xHandler);
-        var provider = services.BuildServiceProvider();
-        var helper = new TypeConverter(provider);
+        var builder = new FrameworkBuilder()
+            .AddHandler<X, Y, XHandler>()
+            .Build();
+        var helper = new TypeConverter(builder.Options.JsonConverters);
 
         var taskX = Task.FromResult(new X { Value = 42 });
         var json = helper.SerializeOutput(taskX);

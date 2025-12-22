@@ -22,7 +22,7 @@ public class Framework(FrameworkOptions options)
     public bool Start(bool dev)
     {
         var services = Options.Services;
-        services.AddSingleton<TypeConverter>();
+        services.AddSingleton(new TypeConverter(Options.JsonConverters));
         services.Configure<ServerOptions>(serverOptions =>
         {
             serverOptions.Dev = dev;
@@ -30,7 +30,6 @@ public class Framework(FrameworkOptions options)
             serverOptions.FrontendDistPath = CliUtils.JoinPath(Options.FrontendPath, "dist");
             serverOptions.ExposedTypes = Options.ExposedTypes;
         });
-        Options.ConfigureServices?.Invoke(services);
 
         services.AddSingleton<Server>();
         var context = new WatariContext

@@ -11,10 +11,9 @@ public class GenerateCommand(FrameworkOptions options)
     public void Execute()
     {
         var services = Options.Services;
-        services.AddSingleton<TypeConverter>();
-        Options.ConfigureServices?.Invoke(services);
-
+        services.AddSingleton(new TypeConverter(Options.JsonConverters));
         var provider = services.BuildServiceProvider();
+
         var success = new TypeGenerator(new TypeGeneratorOptions
         {
             OutputPath = Options.FrontendPath,

@@ -31,23 +31,10 @@ public class FrameworkBuilder
         return this;
     }
 
-    public FrameworkBuilder AddHandler<THandler>() where THandler : ITypeHandler, new()
+    public FrameworkBuilder AddHandler<TInput, TOutput, THandler>() where THandler : class, ITypeHandler<TInput, TOutput>, new()
     {
-        var handlerType = typeof(THandler);
-        var interfaceType = handlerType.GetInterfaces().FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITypeHandler<,>));
-        if (interfaceType == null)
-        {
-            throw new InvalidOperationException($"Type {handlerType.Name} must implement ITypeHandler<T, TS> to be used as a type handler.");
-        }
-        var tCSharp = interfaceType.GetGenericArguments()[0];
-        var instance = new THandler();
-        _options.Services.AddSingleton(typeof(ITypeHandler<>).MakeGenericType(tCSharp), instance);
-        return this;
-    }
-
-    public FrameworkBuilder ConfigureServices(Action<IServiceCollection> configureServices)
-    {
-        _options.ConfigureServices = configureServices;
+        _options.Services.AddSingleton<ITypeHandler<TInput>, THandler>();
+        _options.JsonConverters.Add(new TypeHandlerConverter<TInput, TOutput>(new THandler()));
         return this;
     }
 
@@ -55,6 +42,12 @@ public class FrameworkBuilder
     {
         _options.Services.AddScoped(typeof(T));
         _options.ExposedTypes.Add(typeof(T));
+        return this;
+    }
+
+    public FrameworkBuilder ConfigureServices(Action<ServiceCollection> configure)
+    {
+        configure(_options.Services);
         return this;
     }
 

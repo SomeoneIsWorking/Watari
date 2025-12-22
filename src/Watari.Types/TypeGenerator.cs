@@ -24,6 +24,7 @@ public class TypeGenerator(TypeGeneratorOptions options)
 
         foreach (var type in options.ExposedTypes)
         {
+            Console.WriteLine($"Processing type: {type.Name}");
             var sb = new StringBuilder();
             sb.AppendLine("import * as models from \"./models\";");
             sb.AppendLine();
@@ -31,6 +32,7 @@ public class TypeGenerator(TypeGeneratorOptions options)
             sb.AppendLine($"export class {type.Name} {{");
             var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
                               .Where(m => !m.IsSpecialName && m.DeclaringType == type); // only declared in this type
+                              
             foreach (var method in methods)
             {
                 var paramList = string.Join(", ", method.GetParameters()
@@ -41,12 +43,14 @@ public class TypeGenerator(TypeGeneratorOptions options)
                 var args = string.IsNullOrEmpty(paramNames) ? "" : $", {paramNames}";
                 sb.AppendLine($"        return watari_invoke<{returnType}>(\"{type.Name}.{method.Name}\"{args});");
                 sb.AppendLine("    }");
+                Console.WriteLine($"> {method.Name}({paramList}): Promise<{returnType}>");
             }
             sb.AppendLine("}");
 
             var fileName = ToCamelCase(type.Name) + ".ts";
             var outputFile = Path.Combine(outputDir, fileName);
             File.WriteAllText(outputFile, sb.ToString());
+            Console.WriteLine($"Generated file: {outputFile}\n");
         }
 
         var modelsSb = new StringBuilder();
@@ -63,6 +67,7 @@ public class TypeGenerator(TypeGeneratorOptions options)
 
         var modelsFile = Path.Combine(outputDir, "models.ts");
         File.WriteAllText(modelsFile, modelsSb.ToString());
+        Console.WriteLine($"Generated models file: {modelsFile}:\n\n{modelsSb}");
 
         File.WriteAllText(Path.Combine(outputDir, ".gitignore"), "*");
 
