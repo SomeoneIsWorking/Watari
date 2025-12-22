@@ -1,6 +1,7 @@
 
 
-using System.Diagnostics;
+using CliWrap;
+using CliWrap.EventStream;
 
 namespace Watari;
 
@@ -13,53 +14,29 @@ public class NpmManager
         Console.WriteLine("Starting npm dev server...");
         var tsc = new TaskCompletionSource();
         // Start npm dev server logic here
-        ProcessStartInfo startInfo = new()
+        await foreach (var evt in Cli.Wrap("npm")
+            .WithArguments($"run dev -- --port {port}")
+            .WithWorkingDirectory(dir)
+            .ListenAsync(cancellationToken))
         {
-            FileName = "npm",
-            Arguments = $"run dev -- --port {port}",
-            WorkingDirectory = dir,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-        Process process = new()
-        {
-            StartInfo = startInfo,
-            EnableRaisingEvents = true,
-        };
-        process.OutputDataReceived += (sender, e) =>
-        {
-            if (string.IsNullOrEmpty(e.Data))
+            switch (evt)
             {
-                return;
+                case StartedCommandEvent started:
+                    break;
+                case StandardOutputCommandEvent output:
+                    Console.WriteLine($"[npm stdout]: {output.Text}");
+                    if (output.Text.Contains("ready in"))
+                    {
+                        Ready?.Invoke(this, EventArgs.Empty);
+                        tsc.SetResult();
+                    }
+                    break;
+                case StandardErrorCommandEvent error:
+                    Console.Error.WriteLine($"[npm stderr]: {error.Text}");
+                    break;
             }
-            if (e.Data.Contains("ready in"))
-            {
-                Ready?.Invoke(this, EventArgs.Empty);
-                tsc.SetResult();
-            }
-            Console.WriteLine($"[npm stdout]: {e.Data}");
-        };
-        process.ErrorDataReceived += (sender, e) =>
-        {
-            if (string.IsNullOrEmpty(e.Data))
-            {
-                return;
-            }
-            Console.WriteLine($"[npm stderr]: {e.Data}");
-        };
-
-        process.Start();
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-        cancellationToken.Register(() =>
-        {
-            if (!process.HasExited)
-            {
-                process.Kill();
-            }
-        });
+            if (tsc.Task.IsCompleted) break;
+        }
         await tsc.Task;
     }
 }

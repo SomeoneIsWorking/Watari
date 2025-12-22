@@ -12,4 +12,9 @@
     <ProjectReference Include="..\Watari.Types\Watari.Types.csproj" />
     <ProjectReference Include="..\Watari.Server\Watari.Server.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CliWrap" Version="3.10.0" />
+    <PackageReference Include="System.CommandLine" Version="2.0.1" />
+  </ItemGroup>
 </Project>

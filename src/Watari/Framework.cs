@@ -1,5 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Watari.Types;
+﻿using System.CommandLine;
+using Watari.Commands;
 
 namespace Watari;
 
@@ -9,55 +9,21 @@ public class Framework(FrameworkOptions options)
 
     public bool Run(string[] args)
     {
-        var services = Options.Services;
-        services.AddSingleton<TypeConverter>();
-        services.Configure<ServerOptions>(serverOptions =>
-        {
-            serverOptions.Dev = Options.Dev;
-            serverOptions.DevPort = Options.DevPort;
-            serverOptions.ServerPort = Options.ServerPort;
-            serverOptions.FrontendPath = Options.FrontendPath;
-            serverOptions.ExposedTypes = Options.ExposedTypes;
-        });
-        Options.ConfigureServices?.Invoke(services);
-        services.AddTransient<Server>();
+        var rootCommand = new RootCommand("Watari Framework");
 
-        // Initialize application early for DI
-        var app = new Controls.Platform.Application();
-        var win = new Controls.Platform.Window();
-        var context = new WatariContext { MainWindow = win };
-        services.AddSingleton(context);
+        var devCommand = new Command("dev", "Run in development mode");
+        devCommand.SetAction((parseResult) => new DevCommand(Options).Execute());
 
-        if (args.Any(x => x == "-g" || x == "--generate"))
-        {
-            var provider = services.BuildServiceProvider();
-            return new TypeGenerator(new TypeGeneratorOptions
-            {
-                OutputPath = Options.FrontendPath,
-                ExposedTypes = Options.ExposedTypes,
-                Provider = provider
-            }).Generate();
-        }
+        var publishCommand = new Command("publish", "Publish the application");
+        publishCommand.SetAction((parseResult) => new PublishCommand(Options).ExecuteAsync());
 
-        var serviceProvider = services.BuildServiceProvider();
-        var server = serviceProvider.GetRequiredService<Server>();
-        server.Start().GetAwaiter().GetResult();
+        var generateCommand = new Command("generate", "Generate TypeScript types");
+        generateCommand.SetAction((parseResult) => new GenerateCommand(Options).Execute());
 
-        // Initialize application (menus, Dock, activation)
-        app.AddWindow(win, true);
-        var webview = new Controls.Platform.WebView();
-        win.SetContent(webview);
+        rootCommand.Add(devCommand);
+        rootCommand.Add(publishCommand);
+        rootCommand.Add(generateCommand);
 
-        if (Options.Dev)
-        {
-            webview.Navigate($"http://localhost:{Options.DevPort}");
-        }
-
-        // Inject watari_invoke as user script
-        var invokeScript = $"window.watari_invoke = async function(method, ...args) {{ const response = await fetch('http://localhost:{Options.ServerPort}/invoke', {{ method: 'POST', headers: {{ 'Content-Type': 'application/json' }}, body: JSON.stringify({{ method, args }}) }}); return await response.json(); }};";
-        webview.AddUserScript(invokeScript, 0, true);
-
-        app.RunLoop();
-        return true;
+        return rootCommand.Parse(args).Invoke() == 0;
     }
 }

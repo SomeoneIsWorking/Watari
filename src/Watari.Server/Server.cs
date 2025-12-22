@@ -13,8 +13,6 @@ public class Server(IOptions<ServerOptions> options, TypeConverter typeConverter
     public NpmManager NpmManager { get; } = new NpmManager();
     public WebApplication WebApplication { get; private set; } = null!;
     public ServerOptions Options { get; } = options.Value;
-    private TypeConverter _typeConverter = typeConverter;
-    private IServiceProvider _serviceProvider = serviceProvider;
 
     public async Task Start()
     {
@@ -40,7 +38,7 @@ public class Server(IOptions<ServerOptions> options, TypeConverter typeConverter
 
     private async Task<IResult> HandleRequest(HttpContext context)
     {
-        var request = await JsonSerializer.DeserializeAsync<InvokeRequest>(context.Request.Body, _typeConverter.JsonOptions);
+        var request = await JsonSerializer.DeserializeAsync<InvokeRequest>(context.Request.Body, typeConverter.JsonOptions);
         if (request == null) return Results.BadRequest();
 
         var parts = request.Method.Split('.');
@@ -63,19 +61,19 @@ public class Server(IOptions<ServerOptions> options, TypeConverter typeConverter
         {
             var paramType = parameters[i].ParameterType;
             var arg = request.Args[i];
-            args[i] = _typeConverter.ResolveInput(paramType, arg);
+            args[i] = typeConverter.ResolveInput(paramType, arg);
         }
 
-        var instance = _serviceProvider.GetRequiredService(type);
+        var instance = serviceProvider.GetRequiredService(type);
         var result = method.Invoke(instance, args);
 
-        object? response = _typeConverter.ResolveResponse(method.ReturnType, result);
+        object? response = typeConverter.ResolveResponse(method.ReturnType, result);
 
         if (response == null)
         {
             return Results.NoContent();
         }
 
-        return Results.Json(response, _typeConverter.JsonOptions);
+        return Results.Json(response, typeConverter.JsonOptions);
     }
 }

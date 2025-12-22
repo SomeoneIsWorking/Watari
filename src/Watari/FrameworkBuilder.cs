@@ -66,4 +66,9 @@ public class FrameworkBuilder
         _options.ExposedTypes.Add(typeof(T));
         return this;
     }
+
+    public object SetRelativePath()
+    {
+        throw new NotImplementedException();
+    }
 }
