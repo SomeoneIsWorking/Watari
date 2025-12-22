@@ -32,7 +32,7 @@ public class TypeGenerator(TypeGeneratorOptions options)
             sb.AppendLine($"export class {type.Name} {{");
             var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
                               .Where(m => !m.IsSpecialName && m.DeclaringType == type); // only declared in this type
-                              
+
             foreach (var method in methods)
             {
                 var paramList = string.Join(", ", method.GetParameters()
@@ -94,7 +94,14 @@ public class TypeGenerator(TypeGeneratorOptions options)
 
     private void CollectTypes(Type t)
     {
-        if (_collectedTypes.Contains(t) || IsPrimitive(t))
+        if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Task<>))
+        {
+            var innerType = t.GetGenericArguments()[0];
+            CollectTypes(innerType);
+            return;
+        }
+
+        if (_collectedTypes.Contains(t) || IsPrimitive(t) || t == typeof(Task))
         {
             return;
         }
@@ -155,7 +162,7 @@ public class TypeGenerator(TypeGeneratorOptions options)
             return "string";
         if (type == typeof(bool))
             return "boolean";
-        if (type == typeof(void))
+        if (type == typeof(void) || type == typeof(Task))
             return "void";
 
         var handlerType = typeof(ITypeHandler<>).MakeGenericType(type);

@@ -88,7 +88,7 @@ public class SerializationTests
 
         var dtsContent = File.ReadAllText(dtsFile);
         Assert.Contains("declare global {", dtsContent);
-        Assert.Contains("function watari_invoke<T>(method: string, ...args: any[]): Promise<T>;", dtsContent);
+        Assert.Contains("invoke<T>(method: string, ...args: any[]): Promise<T>;", dtsContent);
 
         var gitignoreContent = File.ReadAllText(gitignoreFile);
         Assert.Equal("*", gitignoreContent.Trim());
