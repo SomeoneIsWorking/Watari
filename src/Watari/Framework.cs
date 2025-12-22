@@ -1,8 +1,4 @@
-﻿using System;
-using System.CommandLine;
-using System.IO;
-using Microsoft.Extensions.DependencyInjection;
-using Watari.Commands;
+﻿using Microsoft.Extensions.DependencyInjection;
 
 namespace Watari;
 

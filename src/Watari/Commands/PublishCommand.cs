@@ -1,10 +1,5 @@
-using System;
-using System.IO;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using CliWrap;
 using CliWrap.Buffered;
-using CliWrap.EventStream;
 using Microsoft.Extensions.DependencyInjection;
 using Watari.Types;
 
