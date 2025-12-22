@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using System.Reflection;
 using System.Text.Json;
@@ -16,7 +15,10 @@ public class Server(IOptions<ServerOptions> options, TypeConverter typeConverter
 
     public async Task StartAsync()
     {
-        var builder = WebApplication.CreateBuilder();
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            ContentRootPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
+        });
         builder.Services.AddCors();
         WebApplication webApplication = builder.Build();
         webApplication.Urls.Add($"http://localhost:{Options.ServerPort}");
@@ -26,11 +28,7 @@ public class Server(IOptions<ServerOptions> options, TypeConverter typeConverter
 
         if (!Options.Dev)
         {
-            webApplication.UseStaticFiles(new StaticFileOptions
-            {
-                FileProvider = new PhysicalFileProvider(Options.FrontendDistPath),
-                RequestPath = ""
-            });
+            webApplication.UseStaticFiles();
         }
 
         await webApplication.StartAsync(Options.CancellationToken);

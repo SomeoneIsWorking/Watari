@@ -27,7 +27,6 @@ public class Framework(FrameworkOptions options)
         {
             serverOptions.Dev = dev;
             serverOptions.ServerPort = Options.ServerPort;
-            serverOptions.FrontendDistPath = CliUtils.JoinPath(Options.FrontendPath, "dist");
             serverOptions.ExposedTypes = Options.ExposedTypes;
         });
 

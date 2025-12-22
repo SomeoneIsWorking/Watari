@@ -9,12 +9,12 @@ public class TypeGenerator(TypeGeneratorOptions options)
     private readonly TypeGeneratorOptions options = options;
     private readonly HashSet<Type> _collectedTypes = [];
 
-    public bool Generate()
+    public void Generate()
     {
         Console.WriteLine($"Generating TypeScript definitions in {options.OutputPath}...");
         if (options.ExposedTypes is not { Count: > 0 })
         {
-            return false;
+            return;
         }
 
         CollectTypes();
@@ -73,8 +73,6 @@ public class TypeGenerator(TypeGeneratorOptions options)
 
         var dtsFile = Path.Combine(outputDir, "watari.d.ts");
         File.WriteAllText(dtsFile, "declare global {\n    function watari_invoke<T>(method: string, ...args: any[]): Promise<T>;\n}\n\nexport {};\n");
-
-        return true;
     }
 
     private void CollectTypes()

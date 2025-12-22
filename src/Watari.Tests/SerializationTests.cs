@@ -62,8 +62,7 @@ public class SerializationTests
             Provider = provider
         };
         var types = new TypeGenerator(options);
-        var result = types.Generate();
-        Assert.True(result);
+        types.Generate();
 
         // Check if files are generated
         var outputDir = Path.Combine(options.OutputPath, "src", "generated");

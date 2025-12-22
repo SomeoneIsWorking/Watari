@@ -14,16 +14,11 @@ public class GenerateCommand(FrameworkOptions options)
         services.AddSingleton(new TypeConverter(Options.JsonConverters));
         var provider = services.BuildServiceProvider();
 
-        var success = new TypeGenerator(new TypeGeneratorOptions
+        new TypeGenerator(new TypeGeneratorOptions
         {
             OutputPath = Options.FrontendPath,
             ExposedTypes = Options.ExposedTypes,
             Provider = provider
         }).Generate();
-
-        if (!success)
-        {
-            throw new Exception("Type generation failed");
-        }
     }
 }
