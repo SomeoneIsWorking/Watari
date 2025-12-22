@@ -20,6 +20,12 @@ public class FrameworkBuilder
         return this;
     }
 
+    public FrameworkBuilder SetServerPort(int port)
+    {
+        _options.ServerPort = port;
+        return this;
+    }
+
     public Framework Build()
     {
         return new Framework(_options);
@@ -49,10 +55,5 @@ public class FrameworkBuilder
     {
         configure(_options.Services);
         return this;
-    }
-
-    public object SetRelativePath()
-    {
-        throw new NotImplementedException();
     }
 }
