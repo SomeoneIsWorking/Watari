@@ -10,5 +10,6 @@ public class FrameworkOptions
     public int ServerPort { get; set; } = 7533;
     public List<Type> ExposedTypes { get; } = [];
     public ICollection<JsonConverter> JsonConverters { get; } = [];
+    public Dictionary<Type, object> TypeHandlers { get; } = [];
     public ServiceCollection Services { get; } = new();
 }

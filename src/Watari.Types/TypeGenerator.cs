@@ -4,9 +4,16 @@ using Watari.Types;
 
 namespace Watari;
 
-public class TypeGenerator(TypeGeneratorOptions options)
+public static class TypeGenerator
 {
-    private readonly TypeGeneratorOptions options = options;
+    public static void Generate(TypeGeneratorOptions options)
+    {
+        new TypeGeneratorInstance(options).Generate();
+    }
+}
+
+public class TypeGeneratorInstance(TypeGeneratorOptions options)
+{
     private readonly HashSet<Type> _collectedTypes = [];
 
     public void Generate()
@@ -44,13 +51,31 @@ public class TypeGenerator(TypeGeneratorOptions options)
                 sb.AppendLine("    }");
                 Console.WriteLine($"> {method.Name}({paramList}): Promise<{returnType}>");
             }
+
+            var events = type.GetEvents(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var evt in events)
+            {
+                var invokeMethod = evt.EventHandlerType!.GetMethod("Invoke");
+                var parameters = invokeMethod!.GetParameters();
+                if (parameters.Length == 1)
+                {
+                    var paramType = parameters[0].ParameterType;
+                    CollectTypes(paramType);
+                    var paramTypeName = MapType(paramType, usedTypes);
+                    sb.AppendLine($"    static {evt.Name}(handler: (data: {paramTypeName}) => void): () => void {{");
+                    sb.AppendLine($"        watari.on(\"{type.Name}.{evt.Name}\", handler);");
+                    sb.AppendLine($"        return () => watari.off(\"{type.Name}.{evt.Name}\", handler);");
+                    sb.AppendLine("    }");
+                    Console.WriteLine($"> {evt.Name}(handler: (data: {paramTypeName}) => void): () => void");
+                }
+            }
             sb.AppendLine("}");
 
             var generatedCode = sb.ToString();
 
             if (usedTypes.Any())
             {
-                var importLine = $"import {{ {string.Join(", ", usedTypes.OrderBy(t => t))} }} from \"./models\";";
+                var importLine = $"import type {{ {string.Join(", ", usedTypes.OrderBy(t => t))} }} from \"./models\";";
                 generatedCode = importLine + "\n\n" + generatedCode;
             }
 
@@ -96,6 +121,16 @@ public class TypeGenerator(TypeGeneratorOptions options)
                     CollectTypes(param.ParameterType);
                 }
             }
+
+            var events = type.GetEvents(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var evt in events)
+            {
+                var invokeMethod = evt.EventHandlerType!.GetMethod("Invoke");
+                foreach (var param in invokeMethod!.GetParameters())
+                {
+                    CollectTypes(param.ParameterType);
+                }
+            }
         }
     }
 
@@ -113,9 +148,7 @@ public class TypeGenerator(TypeGeneratorOptions options)
             return;
         }
 
-        var handlerType = typeof(ITypeHandler<>).MakeGenericType(t);
-
-        if (options.Provider.GetService(handlerType) is ITypeHandler handler)
+        if (options.Handlers.TryGetValue(t, out var handler))
         {
             var interfaceType = handler.GetType().GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITypeHandler<,>));
             var tsType = interfaceType.GetGenericArguments()[1];
@@ -172,10 +205,9 @@ public class TypeGenerator(TypeGeneratorOptions options)
         if (type == typeof(void) || type == typeof(Task))
             return "void";
 
-        var handlerType = typeof(ITypeHandler<>).MakeGenericType(type);
-        if (options.Provider.GetService(handlerType) is ITypeHandler temp)
+        if (options.Handlers.TryGetValue(type, out var handler))
         {
-            var interfaceType = temp.GetType().GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITypeHandler<,>));
+            var interfaceType = handler.GetType().GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITypeHandler<,>));
             var tsType = interfaceType.GetGenericArguments()[1];
             return MapType(tsType, usedTypes);
         }

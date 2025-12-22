@@ -39,14 +39,14 @@ public class FrameworkBuilder
 
     public FrameworkBuilder AddHandler<TInput, TOutput, THandler>() where THandler : class, ITypeHandler<TInput, TOutput>, new()
     {
-        _options.Services.AddSingleton<ITypeHandler<TInput>, THandler>();
+        _options.TypeHandlers[typeof(TInput)] = new THandler();
         _options.JsonConverters.Add(new TypeHandlerConverter<TInput, TOutput>(new THandler()));
         return this;
     }
 
     public FrameworkBuilder Expose<T>()
     {
-        _options.Services.AddScoped(typeof(T));
+        _options.Services.AddSingleton(typeof(T));
         _options.ExposedTypes.Add(typeof(T));
         return this;
     }

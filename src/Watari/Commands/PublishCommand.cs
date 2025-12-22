@@ -11,17 +11,6 @@ public class PublishCommand(FrameworkOptions options)
 
     public async Task ExecuteAsync()
     {
-        var services = Options.Services;
-        services.AddSingleton(new TypeConverter(Options.JsonConverters));
-        var provider = services.BuildServiceProvider();
-
-        new TypeGenerator(new TypeGeneratorOptions
-        {
-            OutputPath = Options.FrontendPath,
-            ExposedTypes = Options.ExposedTypes,
-            Provider = provider
-        }).Generate();
-
         // Build frontend if exists
         await Cli.Wrap("npm")
             .WithArguments("run build")

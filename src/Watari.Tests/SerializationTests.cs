@@ -51,18 +51,17 @@ public class SerializationTests
     public void TestTypeScriptGeneration()
     {
         var xHandler = new XHandler();
-        var services = new ServiceCollection();
-        services.AddSingleton(typeof(ITypeHandler<X>), xHandler);
-        var provider = services.BuildServiceProvider();
         var exposedTypes = new List<Type> { typeof(TestApi) };
         var options = new TypeGeneratorOptions
         {
             OutputPath = Path.GetTempPath(),
             ExposedTypes = exposedTypes,
-            Provider = provider
+            Handlers = new Dictionary<Type, object>
+            {
+                { typeof(X), xHandler }
+            }
         };
-        var types = new TypeGenerator(options);
-        types.Generate();
+        TypeGenerator.Generate(options);
 
         // Check if files are generated
         var outputDir = Path.Combine(options.OutputPath, "src", "generated");
@@ -79,7 +78,7 @@ public class SerializationTests
         // Check contents
         var apiContent = File.ReadAllText(apiFile);
         Assert.Contains("export class TestApi {", apiContent);
-        Assert.Contains("import { Y } from \"./models\";", apiContent);
+        Assert.Contains("import type { Y } from \"./models\";", apiContent);
         Assert.Contains("static GetX(): Promise<Y> {", apiContent);
         Assert.Contains("static GetXAsync(): Promise<Y> {", apiContent);
 
