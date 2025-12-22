@@ -26,8 +26,7 @@ public class TypeGenerator(TypeGeneratorOptions options)
         {
             Console.WriteLine($"Processing type: {type.Name}");
             var sb = new StringBuilder();
-            sb.AppendLine("import * as models from \"./models\";");
-            sb.AppendLine();
+            var usedTypes = new HashSet<string>();
 
             sb.AppendLine($"export class {type.Name} {{");
             var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
@@ -36,9 +35,9 @@ public class TypeGenerator(TypeGeneratorOptions options)
             foreach (var method in methods)
             {
                 var paramList = string.Join(", ", method.GetParameters()
-                    .Select(p => $"{p.Name}: {MapType(p.ParameterType)}"));
+                    .Select(p => $"{p.Name}: {MapType(p.ParameterType, usedTypes)}"));
                 var paramNames = string.Join(", ", method.GetParameters().Select(p => p.Name));
-                var returnType = MapType(method.ReturnType);
+                var returnType = MapType(method.ReturnType, usedTypes);
                 sb.AppendLine($"    static {method.Name}({paramList}): Promise<{returnType}> {{");
                 var args = string.IsNullOrEmpty(paramNames) ? "" : $", {paramNames}";
                 sb.AppendLine($"        return watari.invoke<{returnType}>(\"{type.Name}.{method.Name}\"{args});");
@@ -47,9 +46,17 @@ public class TypeGenerator(TypeGeneratorOptions options)
             }
             sb.AppendLine("}");
 
+            var generatedCode = sb.ToString();
+
+            if (usedTypes.Any())
+            {
+                var importLine = $"import {{ {string.Join(", ", usedTypes.OrderBy(t => t))} }} from \"./models\";";
+                generatedCode = importLine + "\n\n" + generatedCode;
+            }
+
             var fileName = ToCamelCase(type.Name) + ".ts";
             var outputFile = Path.Combine(outputDir, fileName);
-            File.WriteAllText(outputFile, sb.ToString());
+            File.WriteAllText(outputFile, generatedCode);
             Console.WriteLine($"Generated file: {outputFile}\n");
         }
 
@@ -152,7 +159,7 @@ public class TypeGenerator(TypeGeneratorOptions options)
         return t.IsPrimitive || t == typeof(string) || t == typeof(decimal) || t == typeof(void);
     }
 
-    private string MapType(Type type)
+    private string MapType(Type type, HashSet<string>? usedTypes = null)
     {
         if (type == typeof(int) || type == typeof(long) || type == typeof(short) || type == typeof(byte) ||
          type == typeof(uint) || type == typeof(ulong) || type == typeof(ushort) || type == typeof(sbyte) ||
@@ -170,29 +177,30 @@ public class TypeGenerator(TypeGeneratorOptions options)
         {
             var interfaceType = temp.GetType().GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITypeHandler<,>));
             var tsType = interfaceType.GetGenericArguments()[1];
-            return MapType(tsType);
+            return MapType(tsType, usedTypes);
         }
         if (IsDictionary(type))
         {
             var dictInterface = type.GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>));
             var keyType = dictInterface.GetGenericArguments()[0];
             var valueType = dictInterface.GetGenericArguments()[1];
-            return $"Record<{MapType(keyType)}, {MapType(valueType)}>";
+            return $"Record<{MapType(keyType, usedTypes)}, {MapType(valueType, usedTypes)}>";
         }
         if (IsEnumerable(type))
         {
             var enumInterface = type.GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
             var itemType = enumInterface.GetGenericArguments()[0];
-            return $"{MapType(itemType)}[]";
+            return $"{MapType(itemType, usedTypes)}[]";
         }
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Task<>))
         {
             var innerType = type.GetGenericArguments()[0];
-            return MapType(innerType);
+            return MapType(innerType, usedTypes);
         }
 
-        // For complex types, return the type name prefixed with models
-        return "models." + type.Name;
+        // For complex types, return the type name and add to used types
+        usedTypes?.Add(type.Name);
+        return type.Name;
     }
 
     private static bool IsEnumerable(Type type)

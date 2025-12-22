@@ -79,8 +79,9 @@ public class SerializationTests
         // Check contents
         var apiContent = File.ReadAllText(apiFile);
         Assert.Contains("export class TestApi {", apiContent);
-        Assert.Contains("static GetX(): Promise<models.Y> {", apiContent);
-        Assert.Contains("static GetXAsync(): Promise<models.Y> {", apiContent);
+        Assert.Contains("import { Y } from \"./models\";", apiContent);
+        Assert.Contains("static GetX(): Promise<Y> {", apiContent);
+        Assert.Contains("static GetXAsync(): Promise<Y> {", apiContent);
 
         var modelsContent = File.ReadAllText(modelsFile);
         Assert.Contains("export interface Y {", modelsContent);
