@@ -20,5 +20,6 @@
 
   <ItemGroup>
     <None Include="watari.js" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="watari.d.ts" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

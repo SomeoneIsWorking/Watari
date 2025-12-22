@@ -103,8 +103,9 @@ public class TypeGeneratorInstance(TypeGeneratorOptions options)
 
         File.WriteAllText(Path.Combine(outputDir, ".gitignore"), "*");
 
-        var dtsFile = Path.Combine(outputDir, "watari.d.ts");
-        File.WriteAllText(dtsFile, "declare global {\n    const watari: {\n        invoke<T>(method: string, ...args: any[]): Promise<T>;\n        on(event: string, handler: (data: any) => void): void;\n        off(event: string, handler: (data: any) => void): void;\n    };\n}\n\nexport {};\n");
+        var sourceDstFile = Path.Combine(AppContext.BaseDirectory, "watari.d.ts");
+        var targetDtsFile = Path.Combine(outputDir, "watari.d.ts");
+        File.Copy(sourceDstFile, targetDtsFile, true);
     }
 
     private void CollectTypes()
