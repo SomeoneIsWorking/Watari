@@ -1,4 +1,3 @@
-using System;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Watari;
@@ -9,6 +8,7 @@ public class App
     {
         var server = serviceProvider.GetRequiredService<Server>();
         var context = serviceProvider.GetRequiredService<WatariContext>();
+        context.Server = server;
         var options = context.Options;
         var waitTask = server.StartAsync();
         if (dev)
@@ -39,9 +39,10 @@ public class App
             context.WebView.Navigate($"http://localhost:{options.ServerPort}/index.html");
         }
 
-        // Inject watari_invoke as user script
-        var invokeScript = $"window.watari_invoke = async function(method, ...args) {{ const response = await fetch('http://localhost:{options.ServerPort}/invoke', {{ method: 'POST', headers: {{ 'Content-Type': 'application/json' }}, body: JSON.stringify({{ method, args }}) }}); return await response.json(); }};";
-        context.WebView.AddUserScript(invokeScript, 0, true);
+        // Inject watari API as user script
+        var watariJsPath = Path.Combine(AppContext.BaseDirectory, "watari.js");
+        var watariScript = File.ReadAllText(watariJsPath) + $"\ninitWatari({options.ServerPort});";
+        context.WebView.AddUserScript(watariScript, 0, true);
 
         context.Application.RunLoop();
     }

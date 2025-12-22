@@ -6,4 +6,5 @@ public class WatariContext
     public Controls.Platform.Window MainWindow { get; set; } = null!;
     public Controls.Platform.WebView WebView { get; set; } = null!;
     public required FrameworkOptions Options { get; set; }
+    public Server Server { get; set; } = null!;
 }

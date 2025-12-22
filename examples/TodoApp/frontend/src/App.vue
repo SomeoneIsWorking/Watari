@@ -121,6 +121,10 @@ onMounted(() => {
   </div>
 </template>
 
+<script lang="ts">
+  watari.on('todoAdded', x=> console.log(JSON.stringify(x)));
+</script>
+
 <style scoped>
 .app {
   max-width: 600px;

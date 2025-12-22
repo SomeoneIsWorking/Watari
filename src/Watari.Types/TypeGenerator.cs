@@ -41,7 +41,7 @@ public class TypeGenerator(TypeGeneratorOptions options)
                 var returnType = MapType(method.ReturnType);
                 sb.AppendLine($"    static {method.Name}({paramList}): Promise<{returnType}> {{");
                 var args = string.IsNullOrEmpty(paramNames) ? "" : $", {paramNames}";
-                sb.AppendLine($"        return watari_invoke<{returnType}>(\"{type.Name}.{method.Name}\"{args});");
+                sb.AppendLine($"        return watari.invoke<{returnType}>(\"{type.Name}.{method.Name}\"{args});");
                 sb.AppendLine("    }");
                 Console.WriteLine($"> {method.Name}({paramList}): Promise<{returnType}>");
             }
@@ -72,7 +72,7 @@ public class TypeGenerator(TypeGeneratorOptions options)
         File.WriteAllText(Path.Combine(outputDir, ".gitignore"), "*");
 
         var dtsFile = Path.Combine(outputDir, "watari.d.ts");
-        File.WriteAllText(dtsFile, "declare global {\n    function watari_invoke<T>(method: string, ...args: any[]): Promise<T>;\n}\n\nexport {};\n");
+        File.WriteAllText(dtsFile, "declare global {\n    const watari: {\n        invoke<T>(method: string, ...args: any[]): Promise<T>;\n        on(event: string, handler: (data: any) => void): void;\n        off(event: string, handler: (data: any) => void): void;\n    };\n}\n\nexport {};\n");
     }
 
     private void CollectTypes()

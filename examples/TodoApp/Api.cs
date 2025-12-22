@@ -17,7 +17,7 @@ public class Api(WatariContext context)
         return _todos;
     }
 
-    public TodoItem AddTodo(string text)
+    public async Task<TodoItem> AddTodo(string text)
     {
         var todo = new TodoItem
         {
@@ -27,25 +27,28 @@ public class Api(WatariContext context)
         };
         _todos.Add(todo);
         SaveTodos();
+        await _context.Server.EmitEvent("todoAdded", todo);
         return todo;
     }
 
-    public bool UpdateTodo(string id, string text, bool completed)
+    public async Task<bool> UpdateTodo(string id, string text, bool completed)
     {
         var todo = _todos.FirstOrDefault(t => t.Id == id);
         if (todo == null) return false;
         todo.Text = text;
         todo.Completed = completed;
         SaveTodos();
+        await _context.Server.EmitEvent("todoUpdated", todo);
         return true;
     }
 
-    public bool DeleteTodo(string id)
+    public async Task<bool> DeleteTodo(string id)
     {
         var todo = _todos.FirstOrDefault(t => t.Id == id);
         if (todo == null) return false;
         _todos.Remove(todo);
         SaveTodos();
+        await _context.Server.EmitEvent("todoDeleted", new { id });
         return true;
     }
 
