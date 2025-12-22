@@ -7,6 +7,8 @@ public class WebView : IWebView
 {
     public IntPtr Handle { get; private set; } = IntPtr.Zero;
 
+    public event Action<string, string>? ConsoleMessage;
+
     public WebView()
     {
         Handle = WebViewBridge.Create();

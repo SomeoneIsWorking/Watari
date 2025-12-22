@@ -5,17 +5,23 @@
 #include <stdlib.h>
 
 @interface WebViewConsoleLogger : NSObject <WKScriptMessageHandler>
+@property (nonatomic) void (*consoleCallback)(const char* level, const char* message);
 @end
 
 @implementation WebViewConsoleLogger
 - (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message {
     if ([message.name isEqualToString:@"consoleLog"]) {
-        NSLog(@"[Console] %@", message.body);
+        NSDictionary *dict = (NSDictionary *)message.body;
+        NSString *level = dict[@"level"];
+        NSString *msg = dict[@"message"];
+        if (self.consoleCallback) {
+            self.consoleCallback([level UTF8String], [msg UTF8String]);
+        }
     }
 }
 @end
 
-__attribute__((visibility("default"))) CFTypeRef WebView_Create() {
+__attribute__((visibility("default"))) CFTypeRef WebView_Create(void (*callback)(const char*, const char*)) {
   @autoreleasepool {
     NSLog(@"[WebView_Create] creating WKWebView");
     WKWebViewConfiguration *config = [[WKWebViewConfiguration alloc] init];
@@ -23,10 +29,11 @@ __attribute__((visibility("default"))) CFTypeRef WebView_Create() {
     // Set up console.log redirection
     WKUserContentController *userContentController = [[WKUserContentController alloc] init];
     WebViewConsoleLogger *logger = [[WebViewConsoleLogger alloc] init];
+    logger.consoleCallback = callback;
     [userContentController addScriptMessageHandler:logger name:@"consoleLog"];
     
-    // Inject script to override console.log
-    NSString *consoleOverrideScript = @"console.log = function(...args) { window.webkit.messageHandlers.consoleLog.postMessage(args.join(' ')); };";
+    // Inject script to override console methods
+    NSString *consoleOverrideScript = @"var levels = ['log', 'error', 'warn', 'info', 'debug']; levels.forEach(function(level) { console[level] = function(...args) { window.webkit.messageHandlers.consoleLog.postMessage({level: level, message: args.join(' ')}); }; });";
     WKUserScript *userScript = [[WKUserScript alloc] initWithSource:consoleOverrideScript injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
     [userContentController addUserScript:userScript];
     

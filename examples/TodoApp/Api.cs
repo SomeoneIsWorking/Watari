@@ -89,6 +89,7 @@ public class Api(WatariContext context)
 
     public void MoveWindowRight()
     {
+        Console.WriteLine("Moving window right");
         var (x, y) = _context.MainWindow!.GetPosition();
         _context.MainWindow.Move(x + 50, y);
     }

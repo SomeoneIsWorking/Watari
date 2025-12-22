@@ -1,5 +1,4 @@
 
-using System.Runtime.CompilerServices;
 using Watari.Types;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -8,12 +7,6 @@ namespace Watari;
 public class FrameworkBuilder
 {
     private readonly FrameworkOptions _options = new();
-
-    public FrameworkBuilder SetDev(bool dev)
-    {
-        _options.Dev = dev;
-        return this;
-    }
 
     public FrameworkBuilder SetFrontendPath(string path)
     {
@@ -32,11 +25,9 @@ public class FrameworkBuilder
         return new Framework(_options);
     }
 
-    public FrameworkBuilder SetFrontendPathRelative(string relativePath, [CallerFilePath] string callerFilePath = "")
+    public FrameworkBuilder FrontendPath(string relativePath)
     {
-        string callerDirectory = Path.GetDirectoryName(callerFilePath)!;
-        string fullPath = Path.GetFullPath(Path.Combine(callerDirectory, relativePath));
-        _options.FrontendPath = fullPath;
+        _options.FrontendPath = relativePath;
         return this;
     }
 

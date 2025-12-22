@@ -5,11 +5,11 @@ using CliWrap.EventStream;
 
 namespace Watari;
 
-public class NpmManager
+public class NpmManager(string dir, int port)
 {
     public event EventHandler? Ready;
 
-    public async Task StartDev(string dir, int port, CancellationToken cancellationToken = default)
+    public async Task StartDevAsync(CancellationToken cancellationToken = default)
     {
         Console.WriteLine("Starting npm dev server...");
         var tsc = new TaskCompletionSource();

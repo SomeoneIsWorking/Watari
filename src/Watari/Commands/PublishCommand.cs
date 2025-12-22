@@ -22,9 +22,12 @@ public class PublishCommand(FrameworkOptions options)
             .ExecuteBufferedAsync();
 
         await Cli.Wrap("dotnet")
-            .WithArguments($"publish")
+            .WithArguments($"publish --output dist")
             .WithStandardOutputPipe(PipeTarget.ToDelegate(Console.WriteLine))
             .WithStandardErrorPipe(PipeTarget.ToDelegate(Console.Error.WriteLine))
             .ExecuteBufferedAsync();
+
+        // Create .published marker file next to the executable
+        File.WriteAllText(Path.Combine("dist", ".published"), "");
     }
 }

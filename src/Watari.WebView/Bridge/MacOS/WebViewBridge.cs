@@ -4,9 +4,11 @@ namespace Watari.Bridge.MacOS;
 
 internal static partial class WebViewBridge
 {
+    public delegate void ConsoleCallbackDelegate([MarshalAs(UnmanagedType.LPUTF8Str)] string level, [MarshalAs(UnmanagedType.LPUTF8Str)] string message);
+
     [LibraryImport("native/macos/libwebview.dylib", EntryPoint = "WebView_Create")]
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
-    public static partial IntPtr Create();
+    public static partial IntPtr Create(IntPtr callback);
 
     [LibraryImport("native/macos/libwebview.dylib", EntryPoint = "WebView_Navigate")]
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]

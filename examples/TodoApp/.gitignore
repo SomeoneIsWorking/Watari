@@ -2,3 +2,4 @@
 /obj
 *.dylib
 .DS_Store
+/dist

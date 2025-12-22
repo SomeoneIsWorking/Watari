@@ -12,14 +12,6 @@ public class GenerateCommand(FrameworkOptions options)
     {
         var services = Options.Services;
         services.AddSingleton<TypeConverter>();
-        services.Configure<ServerOptions>(serverOptions =>
-        {
-            serverOptions.Dev = Options.Dev;
-            serverOptions.DevPort = Options.DevPort;
-            serverOptions.ServerPort = Options.ServerPort;
-            serverOptions.FrontendPath = Options.FrontendPath;
-            serverOptions.ExposedTypes = Options.ExposedTypes;
-        });
         Options.ConfigureServices?.Invoke(services);
 
         var provider = services.BuildServiceProvider();

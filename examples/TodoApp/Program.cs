@@ -1,6 +1,5 @@
 ﻿new Watari.FrameworkBuilder()
-    .SetDev(true)
     .Expose<Api>()
-    .SetFrontendPathRelative("frontend")
+    .FrontendPath("frontend")
     .Build()
     .Run(args);

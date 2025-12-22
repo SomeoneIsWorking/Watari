@@ -3,9 +3,16 @@ using Watari.Controls.Interfaces;
 
 namespace Watari.Controls.Platform;
 
-public class WebView
+public class WebView : IWebView
 {
     public IWebView WebViewImpl { get; }
+
+    public event Action<string, string>? ConsoleMessage
+    {
+        add => WebViewImpl.ConsoleMessage += value;
+        remove => WebViewImpl.ConsoleMessage -= value;
+    }
+
     public WebView()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))

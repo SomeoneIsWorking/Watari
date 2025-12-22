@@ -7,7 +7,7 @@ namespace Watari;
 public class TypeGenerator(TypeGeneratorOptions options)
 {
     private readonly TypeGeneratorOptions options = options;
-    private readonly HashSet<Type> _collectedTypes = new();
+    private readonly HashSet<Type> _collectedTypes = [];
 
     public bool Generate()
     {

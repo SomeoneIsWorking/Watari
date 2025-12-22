@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using System.Reflection;
 using System.Text.Json;
@@ -10,11 +11,10 @@ namespace Watari;
 
 public class Server(IOptions<ServerOptions> options, TypeConverter typeConverter, IServiceProvider serviceProvider)
 {
-    public NpmManager NpmManager { get; } = new NpmManager();
     public WebApplication WebApplication { get; private set; } = null!;
     public ServerOptions Options { get; } = options.Value;
 
-    public async Task Start()
+    public async Task StartAsync()
     {
         var builder = WebApplication.CreateBuilder();
         builder.Services.AddCors();
@@ -24,16 +24,16 @@ public class Server(IOptions<ServerOptions> options, TypeConverter typeConverter
         webApplication.MapPost("/invoke", (Delegate)HandleRequest);
         WebApplication = webApplication;
 
-        if (Options.Dev)
+        if (!Options.Dev)
         {
-            var start = webApplication.StartAsync(Options.CancellationToken);
-            await NpmManager.StartDev(Options.FrontendPath, Options.DevPort, Options.CancellationToken);
-            await start;
+            webApplication.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(Options.FrontendDistPath),
+                RequestPath = ""
+            });
         }
-        else
-        {
-            await webApplication.StartAsync(Options.CancellationToken);
-        }
+
+        await webApplication.StartAsync(Options.CancellationToken);
     }
 
     private async Task<IResult> HandleRequest(HttpContext context)
