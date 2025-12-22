@@ -31,7 +31,6 @@ __attribute__((visibility("default"))) CFTypeRef Window_CreateWindow(void) {
                                       backing:NSBackingStoreBuffered
                                         defer:NO];
     NSLog(@"[WindowBridge_CreateWindow] window initialized");
-    [window setHidesOnDeactivate:TRUE];
     WindowDelegate *delegate = [[WindowDelegate alloc] init];
     [window setDelegate:delegate];
     objc_setAssociatedObject(window, "WindowDelegate", delegate,
