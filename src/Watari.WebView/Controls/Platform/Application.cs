@@ -38,6 +38,8 @@ public class Application
 
     public void AddMenuItem(string title) => _application.AddMenuItem(title);
 
+    public string? OpenFileDialog(string allowedExtensions) => _application.OpenFileDialog(allowedExtensions);
+
     public void AddWindow(Window window, bool mainWindow)
     {
         _windows.Add(window);

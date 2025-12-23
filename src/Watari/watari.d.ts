@@ -4,6 +4,7 @@ declare global {
         on(event: string, handler: (data: any) => void): void;
         off(event: string, handler: (data: any) => void): void;
         drop_zone(elementId: string, callback: (paths: string[]) => void): () => void;
+        openFileDialog(allowedExtensions: string): Promise<string | null>;
     };
 }
 

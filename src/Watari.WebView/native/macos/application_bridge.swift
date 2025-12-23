@@ -1,5 +1,6 @@
 import Cocoa
 import Darwin
+import UniformTypeIdentifiers
 
 func sigintHandler(_ signal: Int32) {
     print("[ApplicationBridge] SIGINT received, terminating application")
@@ -100,4 +101,29 @@ public func Application_AddMenuItem(_ app: UnsafeMutableRawPointer?, _ title: Un
     let titleString = String(cString: title)
     let newItem = NSMenuItem(title: titleString, action: #selector(ApplicationDelegate.dummyAction(_:)), keyEquivalent: "")
     appMenu.addItem(newItem)
+}
+
+@_cdecl("Application_OpenFileDialog")
+public func Application_OpenFileDialog(_ app: UnsafeMutableRawPointer?, _ allowedExtensions: UnsafePointer<CChar>?) -> UnsafePointer<CChar>? {
+    guard let allowedExtensions = allowedExtensions else { return nil }
+    
+    let extensionsString = String(cString: allowedExtensions)
+    let extensions = extensionsString.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }
+    
+    let panel = NSOpenPanel()
+    panel.canChooseFiles = true
+    panel.canChooseDirectories = false
+    panel.allowsMultipleSelection = false
+    if #available(macOS 12.0, *) {
+        panel.allowedContentTypes = extensions.compactMap { UTType(filenameExtension: $0) }
+    } else {
+        panel.allowedFileTypes = extensions
+    }
+    
+    let response = panel.runModal()
+    if response == .OK, let url = panel.url {
+        let path = url.path
+        return UnsafePointer(strdup(path))
+    }
+    return nil
 }

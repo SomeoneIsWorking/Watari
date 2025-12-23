@@ -7,4 +7,5 @@ public interface IApplication
     void StopLoop();
     void RunOnMainThread(Action action);
     void AddMenuItem(string title);
+    string? OpenFileDialog(string allowedExtensions);
 }

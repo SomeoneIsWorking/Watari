@@ -1,5 +1,6 @@
 import Cocoa
 import WebKit
+import UniformTypeIdentifiers
 
 class WebViewConsoleLogger: NSObject, WKScriptMessageHandler {
     var consoleCallback: (@convention(c) (UnsafePointer<CChar>?, UnsafePointer<CChar>?) -> Void)?
@@ -36,6 +37,48 @@ class WebViewDropHandler: NSObject, WKScriptMessageHandler {
     }
 }
 
+class WebViewFileDialogHandler: NSObject, WKScriptMessageHandler {
+    weak var webView: WKWebView?
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        if message.name == "openFileDialog" {
+            if let dict = message.body as? [String: Any],
+               let callbackId = dict["callbackId"] as? String,
+               let allowedExtensions = dict["allowedExtensions"] as? String {
+                openFileDialog(callbackId: callbackId, allowedExtensions: allowedExtensions)
+            }
+        }
+    }
+
+    func openFileDialog(callbackId: String, allowedExtensions: String) {
+        let extensions = allowedExtensions.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }
+        
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        if #available(macOS 12.0, *) {
+            panel.allowedContentTypes = extensions.compactMap { UTType(filenameExtension: $0) }
+        } else {
+            panel.allowedFileTypes = extensions
+        }
+        
+        let response = panel.runModal()
+        var result: String? = nil
+        if response == .OK, let url = panel.url {
+            result = url.path
+        }
+        
+        let js: String
+        if let result = result {
+            js = "watari.callbacks['\(callbackId)']('\(result)')"
+        } else {
+            js = "watari.callbacks['\(callbackId)'](null)"
+        }
+        webView?.evaluateJavaScript(js, completionHandler: nil)
+    }
+}
+
 class MyWKWebView: WKWebView {
     var dropHandler: WebViewDropHandler?
 
@@ -65,7 +108,7 @@ class MyWKWebView: WKWebView {
     }
 
     override func draggingExited(_ sender: NSDraggingInfo?) {
-        guard let _ = sender, let handler = dropHandler, handler.id != nil else { return }
+        guard let handler = dropHandler, handler.id != nil else { return }
         let clearJs = "watari._clearDropZoneClass('\(handler.id!)')"
         evaluateJavaScript(clearJs, completionHandler: nil)
     }
@@ -113,6 +156,10 @@ public func WebView_Create(_ callback: (@convention(c) (UnsafePointer<CChar>?, U
     userContentController.add(dropHandler, name: "setDropZone")
     userContentController.add(dropHandler, name: "removeDropZone")
 
+    // Set up file dialog handler
+    let fileDialogHandler = WebViewFileDialogHandler()
+    userContentController.add(fileDialogHandler, name: "openFileDialog")
+
     // Inject script to override console methods
     let consoleOverrideScript = """
     var levels = ['log', 'error', 'warn', 'info', 'debug'];
@@ -134,6 +181,9 @@ public func WebView_Create(_ callback: (@convention(c) (UnsafePointer<CChar>?, U
     dropHandler.webView = created
     created.dropHandler = dropHandler
     created.registerForDraggedTypes([.fileURL])
+
+    // Set webView for file dialog handler
+    fileDialogHandler.webView = created
 
     return CFBridgingRetain(created)
 }

@@ -30,4 +30,10 @@ internal class Application : IApplication
     {
         // No op for GTK
     }
+
+    public string? OpenFileDialog(string allowedExtensions)
+    {
+        // TODO: Implement GTK file dialog
+        return null;
+    }
 }

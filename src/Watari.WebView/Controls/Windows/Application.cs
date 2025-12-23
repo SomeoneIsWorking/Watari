@@ -95,4 +95,10 @@ internal class Application : IApplication
     {
         // No op for Windows
     }
+
+    public string? OpenFileDialog(string allowedExtensions)
+    {
+        // TODO: Implement Windows file dialog
+        return null;
+    }
 }

@@ -65,6 +65,16 @@ function initWatari(serverPort) {
         });
       };
     },
+    openFileDialog: function (allowedExtensions) {
+      return new Promise((resolve) => {
+        const callbackId = Date.now().toString();
+        this.callbacks[callbackId] = resolve;
+        window.webkit.messageHandlers.openFileDialog.postMessage({
+          callbackId: callbackId,
+          allowedExtensions: allowedExtensions,
+        });
+      });
+    },
     _checkDropZone: function (elementId, x, y) {
       const el = document.getElementById(elementId);
       return document.elementFromPoint(x, y) === el;

@@ -32,4 +32,9 @@ internal class Application : IApplication
     {
         ApplicationBridge.AddMenuItem(Handle, title);
     }
+
+    public string? OpenFileDialog(string allowedExtensions)
+    {
+        return ApplicationBridge.OpenFileDialog(Handle, allowedExtensions);
+    }
 }
