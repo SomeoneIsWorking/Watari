@@ -1,4 +1,10 @@
 import Cocoa
+import Darwin
+
+func sigintHandler(_ signal: Int32) {
+    print("[ApplicationBridge] SIGINT received, terminating application")
+    NSApplication.shared.terminate(nil)
+}
 
 class ApplicationDelegate: NSObject, NSApplicationDelegate {
     var mainWindow: NSWindow?
@@ -46,6 +52,7 @@ public func Application_Init() -> CFTypeRef? {
 public func Application_RunLoop(_ app: UnsafeMutableRawPointer?) {
     guard let app = app else { return }
     let application = Unmanaged<NSApplication>.fromOpaque(app).takeUnretainedValue()
+    signal(SIGINT, sigintHandler)
     print("[ApplicationBridge runLoop] enter")
     application.run()
     print("[ApplicationBridge runLoop] exit")
