@@ -53,10 +53,10 @@ public class Server(IOptions<ServerOptions> options, TypeConverter typeConverter
         var type = Options.ExposedTypes.FirstOrDefault(t => t.Name == typeName);
         if (type == null) return Results.NotFound();
 
-        var method = type.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance);
-        if (method == null) return Results.NotFound();
+        var actionMethod = type.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance);
+        if (actionMethod == null) return Results.NotFound();
 
-        var parameters = method.GetParameters();
+        var parameters = actionMethod.GetParameters();
         if (parameters.Length != request.Args.Count) return Results.BadRequest();
 
         var args = new object?[parameters.Length];
@@ -68,9 +68,10 @@ public class Server(IOptions<ServerOptions> options, TypeConverter typeConverter
         }
 
         var instance = serviceProvider.GetRequiredService(type);
-        var result = method.Invoke(instance, args);
+        var actionValue = actionMethod.Invoke(instance, args);
 
-        object? response = typeConverter.ResolveResponse(method.ReturnType, result);
+        (object? finalValue, Type finalType) = await AwaitIfTask(actionMethod, actionValue);
+        object? response = typeConverter.ResolveResponse(finalType, finalValue);
 
         if (response == null)
         {
@@ -78,6 +79,26 @@ public class Server(IOptions<ServerOptions> options, TypeConverter typeConverter
         }
 
         return Results.Json(response, typeConverter.JsonOptions);
+    }
+
+    private static async Task<(object?, Type)> AwaitIfTask(MethodInfo method, object? value)
+    {
+        if (!method.ReturnType.IsAssignableTo(typeof(Task)))
+        {
+            return (value, method.ReturnType);
+        }
+        var task = (Task)value!;
+        await task;
+        if (method.ReturnType == typeof(Task))
+        {
+            return (null, typeof(void));
+        }
+        else
+        {
+            var actualResult = task.GetType().GetProperty("Result")!.GetValue(task);
+            var responseType = method.ReturnType.GetGenericArguments()[0];
+            return (actualResult, responseType);
+        }
     }
 
     public async Task EmitEvent(string eventName, object data)
