@@ -6,6 +6,12 @@ function initWatari(serverPort) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ method, args }),
       });
+      if (response.status === 204) {
+        return;
+      }
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
       return await response.json();
     },
     _eventHandlers: {},
