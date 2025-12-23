@@ -13,8 +13,7 @@ public static class CliUtils
             throw new InvalidOperationException("Unable to determine assembly location.");
         }
         string executableDir = Path.GetDirectoryName(assemblyLocation)!;
-        string publishedMarker = Path.Combine(executableDir, ".published");
-        if (File.Exists(publishedMarker))
+        if (IsPublished())
         {
             return executableDir;
         }

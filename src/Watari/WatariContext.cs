@@ -7,4 +7,9 @@ public class WatariContext
     public Controls.Platform.WebView WebView { get; set; } = null!;
     public required FrameworkOptions Options { get; set; }
     public Server Server { get; set; } = null!;
+    public string BasePath { get; } = CliUtils.GetProjectPath();
+    public string PathCombine(params string[] paths)
+    {
+        return Path.Combine(BasePath, Path.Combine(paths));
+    }
 }
