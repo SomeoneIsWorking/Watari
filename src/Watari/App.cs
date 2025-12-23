@@ -40,8 +40,7 @@ public class App
         }
 
         // Inject watari API as user script
-        var watariJsPath = Path.Combine(AppContext.BaseDirectory, "watari.js");
-        var watariScript = File.ReadAllText(watariJsPath) + $"\ninitWatari({options.ServerPort});";
+        var watariScript = WatariResources.WatariJs + $"\ninitWatari({options.ServerPort});";
         context.WebView.AddUserScript(watariScript, 0, true);
 
         context.Application.RunLoop();

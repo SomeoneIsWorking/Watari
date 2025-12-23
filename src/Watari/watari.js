@@ -35,45 +35,70 @@ function initWatari(serverPort) {
       };
     },
     callbacks: {},
-    drop_zone: function (element, callback) {
-      if (!element.id || document.getElementById(element.id) !== element) {
-        throw new Error("Element must have a unique id");
+    drop_zone: function (elementId, callback) {
+      const element = document.getElementById(elementId);
+      if (!element) {
+        throw new Error("Element not found for drop zone");
       }
-      const id = Date.now().toString();
-      this.callbacks[id] = callback;
+      if (this.callbacks[elementId]) {
+        throw new Error("Drop zone already registered for this element");
+      }
+      const callbackId = Date.now().toString();
+      this.callbacks[callbackId] = callback;
       const allowed =
         element.getAttribute("data-watari-allowed-extensions") || "";
       window.webkit.messageHandlers.setDropZone.postMessage({
-        callbackId: id,
-        element: "#" + element.id,
+        callbackId: callbackId,
+        element: elementId,
         allowedExtensions: allowed,
       });
       return () => {
-        delete this.callbacks[id];
+        delete this.callbacks[callbackId];
         window.webkit.messageHandlers.removeDropZone.postMessage({
-          callbackId: id,
+          callbackId: callbackId,
         });
       };
     },
-    _checkDropZone: function (selector, x, y) {
-      const el = document.querySelector(selector);
+    _checkDropZone: function (elementId, x, y) {
+      const el = document.getElementById(elementId);
       return document.elementFromPoint(x, y) === el;
     },
-    _updateDropZoneClass: function (selector, isOver, allowed) {
-      const el = document.querySelector(selector);
-      if (el) {
-        el.classList.remove("--watari-drop", "--watari-drop-not-allowed");
-        if (isOver) {
-          el.classList.add(
-            allowed ? "--watari-drop" : "--watari-drop-not-allowed"
-          );
-        }
+    _updateDropZoneClass: function (elementId, isOver, allowed) {
+      const el = document.getElementById(elementId);
+      if (!el) {
+        return;
+      }
+      el.classList.remove("--watari-drop", "--watari-drop-not-allowed");
+      if (isOver) {
+        el.classList.add(
+          allowed ? "--watari-drop" : "--watari-drop-not-allowed"
+        );
       }
     },
-    _clearDropZoneClass: function (selector) {
-      const el = document.querySelector(selector);
-      if (el) {
-        el.classList.remove("--watari-drop", "--watari-drop-not-allowed");
+    _validateExtensions: function (allowed, paths) {
+      if (!allowed || allowed.length === 0) {
+        return true;
+      }
+      const allowedExts = allowed.split(",").map((e) => e.trim().toLowerCase());
+      for (const path of paths) {
+        const ext = path.split(".").pop().toLowerCase();
+        if (!allowedExts.includes(ext)) return false;
+      }
+      return true;
+    },
+    _checkAndValidateDropZone: function (elementId, x, y, allowed, pathsJson) {
+      const paths = JSON.parse(pathsJson);
+      const isOver = this._checkDropZone(elementId, x, y);
+      const allowedFiles = this._validateExtensions(allowed, paths);
+      this._updateDropZoneClass(elementId, isOver ? 1 : 0, allowedFiles ? 1 : 0);
+      return allowedFiles;
+    },
+    _handleDrop: function (elementId, x, y, pathsJson, callbackId) {
+      const paths = JSON.parse(pathsJson);
+      const el = document.getElementById(elementId);
+      el.classList.remove("--watari-drop", "--watari-drop-not-allowed");
+      if (this._checkDropZone(elementId, x, y)) {
+        this.callbacks[callbackId](paths);
       }
     },
   };

@@ -13,6 +13,7 @@ public class GenerateCommand(FrameworkOptions options)
             OutputPath = Options.FrontendPath,
             ExposedTypes = Options.ExposedTypes,
             Handlers = Options.TypeHandlers,
+            WatariDtsContent = WatariResources.WatariDts,
         });
     }
 }

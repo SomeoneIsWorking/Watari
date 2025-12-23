@@ -15,6 +15,6 @@ for pair in $pairs; do
     library=${pair%%:*}
     flags=(${=pair#*:})
     echo "Building ${library} bridge dylib from: $library -> lib$library.dylib"
-    clang -dynamiclib -o "$ROOT/lib$library.dylib" "$ROOT/${library}_bridge.m" "${flags[@]}" -fobjc-arc -Wall
+    swiftc -emit-library -o "$ROOT/lib$library.dylib" "$ROOT/${library}_bridge.swift" "${flags[@]}"
     echo "Built: lib$library.dylib"
 done

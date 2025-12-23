@@ -59,7 +59,8 @@ public class SerializationTests
             Handlers = new Dictionary<Type, object>
             {
                 { typeof(X), xHandler }
-            }
+            },
+            WatariDtsContent = WatariResources.WatariDts,
         };
         TypeGenerator.Generate(options);
 

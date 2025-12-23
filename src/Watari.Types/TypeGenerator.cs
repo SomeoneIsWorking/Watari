@@ -103,9 +103,8 @@ public class TypeGeneratorInstance(TypeGeneratorOptions options)
 
         File.WriteAllText(Path.Combine(outputDir, ".gitignore"), "*");
 
-        var sourceDstFile = Path.Combine(AppContext.BaseDirectory, "watari.d.ts");
         var targetDtsFile = Path.Combine(outputDir, "watari.d.ts");
-        File.Copy(sourceDstFile, targetDtsFile, true);
+        File.WriteAllText(targetDtsFile, options.WatariDtsContent);
     }
 
     private void CollectTypes()

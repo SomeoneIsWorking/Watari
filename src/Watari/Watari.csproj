@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="watari.js" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="watari.d.ts" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="watari.js" />
+    <EmbeddedResource Include="watari.d.ts" />
   </ItemGroup>
 </Project>
