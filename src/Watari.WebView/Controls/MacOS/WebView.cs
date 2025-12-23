@@ -10,13 +10,13 @@ public class WebView : IWebView
 
     public IntPtr Handle { get; private set; } = IntPtr.Zero;
 
-    public event Action<string, string>? ConsoleMessage;
+    public event Action<string, string> ConsoleMessage = delegate { };
 
     public WebView()
     {
         _consoleCallbackDelegate = (level, message) =>
         {
-            ConsoleMessage?.Invoke(level, message);
+            ConsoleMessage(level, message);
         };
         var ptr = Marshal.GetFunctionPointerForDelegate(_consoleCallbackDelegate);
         Handle = WebViewBridge.Create(ptr);

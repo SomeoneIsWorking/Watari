@@ -8,7 +8,7 @@ public class WebView : IWebView
     private CoreWebView2? _coreWebView2;
     private CoreWebView2Controller? _controller;
 
-    public event Action<string, string>? ConsoleMessage;
+    public event Action<string, string> ConsoleMessage = delegate { };
 
     public WebView()
     {

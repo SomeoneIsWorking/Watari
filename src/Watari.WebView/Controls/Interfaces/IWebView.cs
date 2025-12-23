@@ -6,5 +6,5 @@ public interface IWebView
     bool Eval(string js);
     void Destroy();
     void AddUserScript(string scriptSource, int injectionTime, bool forMainFrameOnly);
-    event Action<string, string>? ConsoleMessage;
+    event Action<string, string> ConsoleMessage;
 }
