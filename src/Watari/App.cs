@@ -1,9 +1,13 @@
+using System;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Watari;
 
 public class App
 {
+    private static NpmManager? _npmManager;
+    private static CancellationTokenSource? _cts;
+
     public static void Start(bool dev, ServiceProvider serviceProvider)
     {
         var server = serviceProvider.GetRequiredService<Server>();
@@ -13,8 +17,9 @@ public class App
         var waitTask = server.StartAsync();
         if (dev)
         {
-            var devTask = new NpmManager(CliUtils.JoinPath("frontend"), options.DevPort)
-                .StartDevAsync();
+            _cts = new CancellationTokenSource();
+            _npmManager = new NpmManager(CliUtils.JoinPath("frontend"), options.DevPort);
+            var devTask = _npmManager.StartDevAsync(_cts.Token);
             waitTask = Task.WhenAll(waitTask, devTask);
         }
         // Initialize application early for DI
@@ -42,6 +47,8 @@ public class App
         // Inject watari API as user script
         var watariScript = WatariResources.WatariJs + $"\ninitWatari({options.ServerPort});";
         context.WebView.AddUserScript(watariScript, 0, true);
+
+        AppDomain.CurrentDomain.ProcessExit += (s, e) => _cts?.Cancel();
 
         context.Application.RunLoop();
     }

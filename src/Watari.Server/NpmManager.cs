@@ -7,36 +7,38 @@ namespace Watari;
 
 public class NpmManager(string dir, int port)
 {
+    private CancellationTokenSource? _cts;
+
     public event EventHandler? Ready;
 
     public async Task StartDevAsync(CancellationToken cancellationToken = default)
     {
         Console.WriteLine("Starting npm dev server...");
+        _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var tsc = new TaskCompletionSource();
         // Start npm dev server logic here
-        await foreach (var evt in Cli.Wrap("npm")
+        _ = Cli.Wrap("npm")
             .WithArguments($"run dev -- --port {port}")
             .WithWorkingDirectory(dir)
-            .ListenAsync(cancellationToken))
-        {
-            switch (evt)
+            .WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
             {
-                case StartedCommandEvent started:
-                    break;
-                case StandardOutputCommandEvent output:
-                    Console.WriteLine($"[npm stdout]: {output.Text}");
-                    if (output.Text.Contains("ready in"))
-                    {
-                        Ready?.Invoke(this, EventArgs.Empty);
-                        tsc.SetResult();
-                    }
-                    break;
-                case StandardErrorCommandEvent error:
-                    Console.Error.WriteLine($"[npm stderr]: {error.Text}");
-                    break;
-            }
-            if (tsc.Task.IsCompleted) break;
-        }
+                Console.WriteLine($"[npm stdout]: {line}");
+                if (line.Contains("ready in"))
+                {
+                    Ready?.Invoke(this, EventArgs.Empty);
+                    tsc.SetResult();
+                }
+            }))
+            .WithStandardErrorPipe(PipeTarget.ToDelegate(line =>
+            {
+                Console.Error.WriteLine($"[npm stderr]: {line}");
+            }))
+            .ExecuteAsync(_cts.Token);
         await tsc.Task;
+    }
+
+    public void Stop()
+    {
+        _cts?.Cancel();
     }
 }
