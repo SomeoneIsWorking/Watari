@@ -156,9 +156,8 @@ public class TypeGeneratorInstance(TypeGeneratorOptions options)
             return;
         }
 
-        if (IsDictionary(t))
+        if (GetDictionary(t) is { } dictInterface)
         {
-            var dictInterface = t.GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>));
             var keyType = dictInterface.GetGenericArguments()[0];
             var valueType = dictInterface.GetGenericArguments()[1];
             CollectTypes(keyType);
@@ -166,9 +165,8 @@ public class TypeGeneratorInstance(TypeGeneratorOptions options)
             return;
         }
 
-        if (IsEnumerable(t))
+        if (GetEnumerable(t) is { } enumInterface)
         {
-            var enumInterface = t.GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
             var itemType = enumInterface.GetGenericArguments()[0];
             CollectTypes(itemType);
             return;
@@ -211,16 +209,14 @@ public class TypeGeneratorInstance(TypeGeneratorOptions options)
             var tsType = interfaceType.GetGenericArguments()[1];
             return MapType(tsType, usedTypes);
         }
-        if (IsDictionary(type))
+        if (GetDictionary(type) is { } dictInterface)
         {
-            var dictInterface = type.GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>));
             var keyType = dictInterface.GetGenericArguments()[0];
             var valueType = dictInterface.GetGenericArguments()[1];
             return $"Record<{MapType(keyType, usedTypes)}, {MapType(valueType, usedTypes)}>";
         }
-        if (IsEnumerable(type))
+        if (GetEnumerable(type) is { } enumInterface)
         {
-            var enumInterface = type.GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
             var itemType = enumInterface.GetGenericArguments()[0];
             return $"{MapType(itemType, usedTypes)}[]";
         }
@@ -235,13 +231,18 @@ public class TypeGeneratorInstance(TypeGeneratorOptions options)
         return type.Name;
     }
 
-    private static bool IsEnumerable(Type type)
+    private static IEnumerable<Type> SelfAndInterfaces(Type type)
     {
-        return type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+        return type.GetInterfaces().Prepend(type);
     }
 
-    private static bool IsDictionary(Type type)
+    private static Type? GetEnumerable(Type type)
     {
-        return type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>));
+        return SelfAndInterfaces(type).FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+    }
+
+    private static Type? GetDictionary(Type type)
+    {
+        return SelfAndInterfaces(type).FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>));
     }
 }

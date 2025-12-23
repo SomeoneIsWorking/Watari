@@ -38,11 +38,9 @@ public class TypeConverter(ICollection<JsonConverter> typeHandlers)
 
     public object? ResolveResponse(Type type, object? value)
     {
-        if (value == null) return null;
-
-        if (type == typeof(void))
+        if (value == null || type == typeof(void))
         {
-            return null; // Though void methods return NoContent earlier
+            return null;
         }
 
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Task<>))
@@ -55,8 +53,7 @@ public class TypeConverter(ICollection<JsonConverter> typeHandlers)
         }
         else if (type == typeof(Task))
         {
-            var task = (Task)value;
-            return null; // Indicates NoContent
+            return null;
         }
         else
         {
