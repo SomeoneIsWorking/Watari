@@ -1,6 +1,11 @@
 import Cocoa
 import Darwin
 import UniformTypeIdentifiers
+import AVFoundation
+
+var audioEngine: AVAudioEngine?
+var playerNode: AVAudioPlayerNode?
+var audioFormat: AVAudioFormat?
 
 func sigintHandler(_ signal: Int32) {
     print("[ApplicationBridge] SIGINT received, terminating application")
@@ -28,7 +33,7 @@ public func Application_Init() -> CFTypeRef? {
     print("[ApplicationBridge] NSApplication created")
     app.setActivationPolicy(.regular)
 
-let delegate = ApplicationDelegate()
+    let delegate = ApplicationDelegate()
     app.delegate = delegate
     objc_setAssociatedObject(app, "ApplicationDelegate", delegate, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
 
@@ -43,21 +48,21 @@ public func Application_RunLoop(_ app: UnsafeMutableRawPointer?) {
     
     // Set up main menu if not already set
     if application.mainMenu == nil {
-    let menubar = NSMenu()
-    let appMenuItem = NSMenuItem()
-    menubar.addItem(appMenuItem)
+        let menubar = NSMenu()
+        let appMenuItem = NSMenuItem()
+        menubar.addItem(appMenuItem)
 
-    let appMenu = NSMenu(title: "")
-    let appName = ProcessInfo.processInfo.processName
-    let quitItem = NSMenuItem(title: "Quit \(appName)",
-                              action: #selector(NSApplication.terminate(_:)),
-                              keyEquivalent: "q")
-    appMenu.addItem(quitItem)
-    appMenuItem.submenu = appMenu
-    application.mainMenu = menubar
-    print("[ApplicationBridge] main menu created")
+        let appMenu = NSMenu(title: "")
+        let appName = ProcessInfo.processInfo.processName
+        let quitItem = NSMenuItem(title: "Quit \(appName)",
+                                  action: #selector(NSApplication.terminate(_:)),
+                                  keyEquivalent: "q")
+        appMenu.addItem(quitItem)
+        appMenuItem.submenu = appMenu
+        application.mainMenu = menubar
+        print("[ApplicationBridge] main menu created")
     }
-
+    
     signal(SIGINT, sigintHandler)
     print("[ApplicationBridge runLoop] enter")
     application.run()
@@ -131,4 +136,37 @@ public func Application_OpenFileDialog(_ app: UnsafeMutableRawPointer?, _ allowe
         return UnsafePointer(strdup(path))
     }
     return nil
+}
+
+@_cdecl("Application_InitAudio")
+public func Application_InitAudio(_ app: UnsafeMutableRawPointer?, _ sampleRate: Double) {
+    guard audioEngine == nil else { return }
+    audioEngine = AVAudioEngine()
+    playerNode = AVAudioPlayerNode()
+    audioFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: sampleRate, channels: 2, interleaved: false)
+    guard let audioEngine = audioEngine, let playerNode = playerNode, let audioFormat = audioFormat else { return }
+    audioEngine.attach(playerNode)
+    audioEngine.connect(playerNode, to: audioEngine.mainMixerNode, format: audioFormat)
+    do {
+        try audioEngine.start()
+        playerNode.play()
+        print("[ApplicationBridge] Audio initialized with sample rate \(sampleRate)")
+    } catch {
+        print("[ApplicationBridge] Failed to start audio engine: \(error)")
+    }
+}
+
+@_cdecl("Application_PlayAudio")
+public func Application_PlayAudio(_ app: UnsafeMutableRawPointer?, _ samples: UnsafeMutableRawPointer?, _ count: Int32) {
+    guard let samples = samples, let playerNode = playerNode, let audioFormat = audioFormat else { return }
+    let frameCount = UInt32(count) / 2  // Assuming stereo, 2 channels
+    guard let buffer = AVAudioPCMBuffer(pcmFormat: audioFormat, frameCapacity: frameCount) else { return }
+    buffer.frameLength = frameCount
+    // Deinterleave and convert int16 to float32: input is L R L R int16, output channel 0: L L L float, channel 1: R R R float
+    let input = samples.bindMemory(to: Int16.self, capacity: Int(count))
+    for i in 0..<Int(frameCount) {
+        buffer.floatChannelData![0][i] = Float(input[i * 2]) / 32768.0     // Left
+        buffer.floatChannelData![1][i] = Float(input[i * 2 + 1]) / 32768.0 // Right
+    }
+    playerNode.scheduleBuffer(buffer)
 }

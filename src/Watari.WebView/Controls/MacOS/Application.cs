@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Watari.Bridge.MacOS;
 using Watari.Controls.Interfaces;
 
@@ -5,6 +6,7 @@ namespace Watari.Controls.MacOS;
 
 internal class Application : IApplication
 {
+    public static double SampleRate = 44100;
     public IntPtr Handle { get; }
     public Application()
     {
@@ -36,5 +38,19 @@ internal class Application : IApplication
     public string? OpenFileDialog(string allowedExtensions)
     {
         return ApplicationBridge.OpenFileDialog(Handle, allowedExtensions);
+    }
+
+    public void InitAudio(double sampleRate = 44100)
+    {
+        SampleRate = sampleRate;
+        ApplicationBridge.InitAudio(Handle, sampleRate);
+    }
+
+    public void PlayAudio(short[] samples)
+    {
+        IntPtr ptr = Marshal.AllocHGlobal(samples.Length * sizeof(short));
+        Marshal.Copy(samples, 0, ptr, samples.Length);
+        ApplicationBridge.PlayAudio(Handle, ptr, samples.Length);
+        Marshal.FreeHGlobal(ptr);
     }
 }

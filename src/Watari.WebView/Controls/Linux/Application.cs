@@ -36,4 +36,14 @@ internal class Application : IApplication
         // TODO: Implement GTK file dialog
         return null;
     }
+
+    public void InitAudio(double sampleRate = 44100)
+    {
+        // TODO: Implement audio initialization
+    }
+
+    public void PlayAudio(short[] samples)
+    {
+        // TODO: Implement audio playback
+    }
 }

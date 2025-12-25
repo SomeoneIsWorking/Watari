@@ -33,4 +33,12 @@ internal static partial class ApplicationBridge
     [System.Runtime.InteropServices.UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
     [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]
     internal static partial string OpenFileDialog(IntPtr handle, [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)] string allowedExtensions);
+
+    [System.Runtime.InteropServices.LibraryImport("native/macos/libapplication.dylib", EntryPoint = "Application_InitAudio")]
+    [System.Runtime.InteropServices.UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+    internal static partial void InitAudio(IntPtr handle, double sampleRate);
+
+    [System.Runtime.InteropServices.LibraryImport("native/macos/libapplication.dylib", EntryPoint = "Application_PlayAudio")]
+    [System.Runtime.InteropServices.UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+    internal static partial void PlayAudio(IntPtr handle, IntPtr samples, int count);
 }

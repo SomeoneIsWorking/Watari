@@ -8,4 +8,6 @@ public interface IApplication
     void RunOnMainThread(Action action);
     void AddMenuItem(string title);
     string? OpenFileDialog(string allowedExtensions);
+    void InitAudio(double sampleRate = 44100);
+    void PlayAudio(short[] samples);
 }
