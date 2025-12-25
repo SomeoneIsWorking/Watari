@@ -28,6 +28,21 @@ public func Application_Init() -> CFTypeRef? {
     print("[ApplicationBridge] NSApplication created")
     app.setActivationPolicy(.regular)
 
+let delegate = ApplicationDelegate()
+    app.delegate = delegate
+    objc_setAssociatedObject(app, "ApplicationDelegate", delegate, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+
+    print("[ApplicationBridge] initialized")
+    return CFBridgingRetain(app)
+}
+
+@_cdecl("Application_RunLoop")
+public func Application_RunLoop(_ app: UnsafeMutableRawPointer?) {
+    guard let app = app else { return }
+    let application = Unmanaged<NSApplication>.fromOpaque(app).takeUnretainedValue()
+    
+    // Set up main menu if not already set
+    if application.mainMenu == nil {
     let menubar = NSMenu()
     let appMenuItem = NSMenuItem()
     menubar.addItem(appMenuItem)
@@ -39,20 +54,10 @@ public func Application_Init() -> CFTypeRef? {
                               keyEquivalent: "q")
     appMenu.addItem(quitItem)
     appMenuItem.submenu = appMenu
-    app.mainMenu = menubar
-
-    let delegate = ApplicationDelegate()
-    app.delegate = delegate
-    objc_setAssociatedObject(app, "ApplicationDelegate", delegate, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-
+    application.mainMenu = menubar
     print("[ApplicationBridge] main menu created")
-    return CFBridgingRetain(app)
-}
+    }
 
-@_cdecl("Application_RunLoop")
-public func Application_RunLoop(_ app: UnsafeMutableRawPointer?) {
-    guard let app = app else { return }
-    let application = Unmanaged<NSApplication>.fromOpaque(app).takeUnretainedValue()
     signal(SIGINT, sigintHandler)
     print("[ApplicationBridge runLoop] enter")
     application.run()
