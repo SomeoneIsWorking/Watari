@@ -7,14 +7,33 @@ using System.Net.WebSockets;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Watari;
 
-public class Server(IOptions<ServerOptions> options, TypeConverter typeConverter, IServiceProvider serviceProvider)
+public class Server(IOptions<ServerOptions> options, IServiceProvider serviceProvider)
 {
+    private JsonSerializerOptions? _jsonOptions;
+
     public WebApplication WebApplication { get; private set; } = null!;
     public ServerOptions Options { get; } = options.Value;
     public WebSocket? EventWebSocket { get; set; }
+    private JsonSerializerOptions JsonOptions => _jsonOptions ??= BuildSerializerOptions();
+
+    private JsonSerializerOptions BuildSerializerOptions()
+    {
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = null,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+
+        foreach (var converter in Options.JsonConverters)
+        {
+            options.Converters.Add(converter);
+        }
+        return options;
+    }
 
     public async Task StartAsync()
     {
@@ -41,7 +60,7 @@ public class Server(IOptions<ServerOptions> options, TypeConverter typeConverter
 
     private async Task<IResult> HandleRequest(HttpContext context)
     {
-        var request = await JsonSerializer.DeserializeAsync<InvokeRequest>(context.Request.Body, typeConverter.JsonOptions);
+        var request = await JsonSerializer.DeserializeAsync<InvokeRequest>(context.Request.Body, JsonOptions);
         if (request == null) return Results.BadRequest();
 
         var parts = request.Method.Split('.');
@@ -64,38 +83,36 @@ public class Server(IOptions<ServerOptions> options, TypeConverter typeConverter
         {
             var paramType = parameters[i].ParameterType;
             var arg = request.Args[i];
-            args[i] = typeConverter.ResolveInput(paramType, arg);
+            args[i] = arg.Deserialize(paramType, JsonOptions);
         }
 
         var instance = serviceProvider.GetRequiredService(type);
         var actionValue = actionMethod.Invoke(instance, args);
+        var finalValue = await AwaitIfTask(actionMethod, actionValue);
 
-        (object? finalValue, Type finalType) = await AwaitIfTask(actionMethod, actionValue);
-        object? response = typeConverter.ResolveResponse(finalType, finalValue);
-
-        if (response == null)
+        if (finalValue == null)
         {
             return Results.NoContent();
         }
 
-        return Results.Json(response, typeConverter.JsonOptions);
+        return Results.Json(finalValue, JsonOptions);
     }
 
-    private static async Task<(object?, Type)> AwaitIfTask(MethodInfo method, object? value)
+    private static async Task<object?> AwaitIfTask(MethodInfo method, object? value)
     {
         if (!method.ReturnType.IsAssignableTo(typeof(Task)))
         {
-            return (value, method.ReturnType);
+            return value;
         }
         var task = (Task)value!;
         await task;
         if (method.ReturnType == typeof(Task))
         {
-            return (null, typeof(void));
+            return null;
         }
         else
         {
-            var actualResult = task.GetType().GetProperty("Result")!.GetValue(task);
+            var actualResult = task.GetType().GetProperty(nameof(Task<object>.Result))!.GetValue(task);
             var responseType = method.ReturnType.GetGenericArguments()[0];
             return (actualResult, responseType);
         }
@@ -105,7 +122,7 @@ public class Server(IOptions<ServerOptions> options, TypeConverter typeConverter
     {
         if (EventWebSocket != null && EventWebSocket.State == WebSocketState.Open)
         {
-            var msg = JsonSerializer.Serialize(new { @event = eventName, data }, typeConverter.JsonOptions);
+            var msg = JsonSerializer.Serialize(new { @event = eventName, data }, JsonOptions);
             var buffer = Encoding.UTF8.GetBytes(msg);
             await EventWebSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
         }

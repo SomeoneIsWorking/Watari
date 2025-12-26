@@ -1,7 +1,5 @@
 using CliWrap;
 using CliWrap.Buffered;
-using Microsoft.Extensions.DependencyInjection;
-using Watari.Types;
 using Microsoft.Extensions.Logging;
 
 namespace Watari.Commands;

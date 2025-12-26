@@ -1,13 +1,28 @@
 using Watari.Types;
 using Xunit;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Watari.Tests;
 
 public class SerializationTests
 {
+
+    private JsonSerializerOptions BuildSerializerOptions(ICollection<JsonConverter> converters)
+    {
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = null,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+
+        foreach (var converter in converters)
+        {
+            options.Converters.Add(converter);
+        }
+        return options;
+    }
     [Fact]
     public void TestNestedTypeWithHandler()
     {
@@ -16,37 +31,19 @@ public class SerializationTests
             .Build();
 
         // Create TypeConverter instance
-        var helper = new TypeConverter(builder.Options.JsonConverters);
+        var options = BuildSerializerOptions(builder.Options.JsonConverters);
 
         // Test serialization of Z containing X
         var z = new Z { MyProperty = new X { Value = 42 } };
-        var json = helper.SerializeOutput(z);
+        var json = JsonSerializer.Serialize(z, options);
         // Should serialize X as Y: { Value: 42 }
         Assert.Contains("\"Value\":42", json);
 
         // Test deserialization
-        var deserializedZ = (Z?)helper.ParseInput(json, typeof(Z));
+        var deserializedZ = (Z?)JsonSerializer.Deserialize(json, typeof(Z), options);
         Assert.NotNull(deserializedZ);
         Assert.NotNull(deserializedZ.MyProperty);
         Assert.Equal(42, deserializedZ.MyProperty.Value);
-    }
-
-    [Fact]
-    public void TestAsyncResponse()
-    {
-        var builder = new FrameworkBuilder()
-            .AddHandler<X, Y, XHandler>()
-            .Build();
-        var helper = new TypeConverter(builder.Options.JsonConverters);
-
-        var taskX = Task.FromResult(new X { Value = 42 });
-        var json = helper.SerializeOutput(taskX);
-        Assert.Contains("\"Value\":42", json);
-
-        // Deserialize back
-        var deserializedX = (X?)helper.ParseInput(json, typeof(X));
-        Assert.NotNull(deserializedX);
-        Assert.Equal(42, deserializedX.Value);
     }
 
     [Fact]
