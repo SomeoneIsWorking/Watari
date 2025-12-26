@@ -1,6 +1,7 @@
 
 using Watari.Types;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Watari;
 
@@ -54,6 +55,12 @@ public class FrameworkBuilder
     public FrameworkBuilder ConfigureServices(Action<ServiceCollection> configure)
     {
         configure(_options.Services);
+        return this;
+    }
+
+    public FrameworkBuilder ConfigureLogging(Action<ILoggingBuilder> configure)
+    {
+        _options.Services.AddLogging(configure);
         return this;
     }
 }

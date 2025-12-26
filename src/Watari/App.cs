@@ -1,5 +1,6 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Watari;
 
@@ -12,13 +13,14 @@ public class App
     {
         var server = serviceProvider.GetRequiredService<Server>();
         var context = serviceProvider.GetRequiredService<WatariContext>();
+        var logger = serviceProvider.GetRequiredService<ILogger<App>>();
         context.Server = server;
         var options = context.Options;
         var waitTask = server.StartAsync();
         if (dev)
         {
             _cts = new CancellationTokenSource();
-            _npmManager = new NpmManager(CliUtils.JoinPath("frontend"), options.DevPort);
+            _npmManager = new NpmManager(CliUtils.JoinPath("frontend"), options.DevPort, serviceProvider.GetRequiredService<ILogger<NpmManager>>());
             var devTask = _npmManager.StartDevAsync(_cts.Token);
             waitTask = Task.WhenAll(waitTask, devTask);
         }
@@ -30,7 +32,7 @@ public class App
         context.WebView = new Controls.Platform.WebView();
         context.WebView.ConsoleMessage += (level, message) =>
         {
-            Console.WriteLine($"[{level.ToUpper()}] {message}");
+            logger.LogInformation("[WebView] [{Level}] {Message}", level.ToUpper(), message);
         };
         context.MainWindow.SetContent(context.WebView);
         waitTask.Wait();

@@ -1,8 +1,9 @@
 using Watari.Types;
+using Microsoft.Extensions.Logging;
 
 namespace Watari.Commands;
 
-public class GenerateCommand(FrameworkOptions options)
+public class GenerateCommand(FrameworkOptions options, ILogger<GenerateCommand> logger)
 {
     public FrameworkOptions Options { get; } = options;
 
@@ -14,6 +15,6 @@ public class GenerateCommand(FrameworkOptions options)
             ExposedTypes = Options.ExposedTypes,
             Handlers = Options.TypeHandlers,
             WatariDtsContent = WatariResources.WatariDts,
-        });
+        }, logger);
     }
 }

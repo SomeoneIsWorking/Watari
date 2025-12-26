@@ -1,24 +1,25 @@
 using System.Reflection;
 using System.Text;
 using Watari.Types;
+using Microsoft.Extensions.Logging;
 
 namespace Watari;
 
 public static class TypeGenerator
 {
-    public static void Generate(TypeGeneratorOptions options)
+    public static void Generate(TypeGeneratorOptions options, ILogger logger)
     {
-        new TypeGeneratorInstance(options).Generate();
+        new TypeGeneratorInstance(options, logger).Generate();
     }
 }
 
-public class TypeGeneratorInstance(TypeGeneratorOptions options)
+public class TypeGeneratorInstance(TypeGeneratorOptions options, ILogger logger)
 {
     private readonly HashSet<Type> _collectedTypes = [];
 
     public void Generate()
     {
-        Console.WriteLine($"Generating TypeScript definitions in {options.OutputPath}...");
+        logger.LogInformation("Generating TypeScript definitions in {OutputPath}...", options.OutputPath);
         if (options.ExposedTypes is not { Count: > 0 })
         {
             return;
@@ -31,7 +32,7 @@ public class TypeGeneratorInstance(TypeGeneratorOptions options)
 
         foreach (var type in options.ExposedTypes)
         {
-            Console.WriteLine($"Processing type: {type.Name}");
+            logger.LogInformation("Processing type: {TypeName}", type.Name);
             var sb = new StringBuilder();
             var usedTypes = new HashSet<string>();
 
@@ -49,7 +50,7 @@ public class TypeGeneratorInstance(TypeGeneratorOptions options)
                 var args = string.IsNullOrEmpty(paramNames) ? "" : $", {paramNames}";
                 sb.AppendLine($"        return watari.invoke<{returnType}>(\"{type.Name}.{method.Name}\"{args});");
                 sb.AppendLine("    }");
-                Console.WriteLine($"> {method.Name}({paramList}): Promise<{returnType}>");
+                logger.LogInformation("> {MethodName}({ParamList}): Promise<{ReturnType}>", method.Name, paramList, returnType);
             }
 
             var events = type.GetEvents(BindingFlags.Public | BindingFlags.Instance);
@@ -66,7 +67,7 @@ public class TypeGeneratorInstance(TypeGeneratorOptions options)
                     sb.AppendLine($"        watari.on(\"{type.Name}.{evt.Name}\", handler);");
                     sb.AppendLine($"        return () => watari.off(\"{type.Name}.{evt.Name}\", handler);");
                     sb.AppendLine("    }");
-                    Console.WriteLine($"> {evt.Name}(handler: (data: {paramTypeName}) => void): () => void");
+                    logger.LogInformation("> {EventName}(handler: (data: {ParamTypeName}) => void): () => void", evt.Name, paramTypeName);
                 }
             }
             sb.AppendLine("}");
@@ -82,7 +83,7 @@ public class TypeGeneratorInstance(TypeGeneratorOptions options)
             var fileName = ToCamelCase(type.Name) + ".ts";
             var outputFile = Path.Combine(outputDir, fileName);
             File.WriteAllText(outputFile, generatedCode);
-            Console.WriteLine($"Generated file: {outputFile}\n");
+            logger.LogInformation("Generated file: {OutputFile}", outputFile);
         }
 
         var modelsSb = new StringBuilder();
@@ -99,7 +100,7 @@ public class TypeGeneratorInstance(TypeGeneratorOptions options)
 
         var modelsFile = Path.Combine(outputDir, "models.ts");
         File.WriteAllText(modelsFile, modelsSb.ToString());
-        Console.WriteLine($"Generated models file: {modelsFile}:\n\n{modelsSb}");
+        logger.LogInformation("Generated models file: {ModelsFile}", modelsFile);
 
         File.WriteAllText(Path.Combine(outputDir, ".gitignore"), "*");
 

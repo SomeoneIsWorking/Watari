@@ -1,6 +1,8 @@
 using Watari.Types;
 using Xunit;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Watari.Tests;
 
@@ -62,7 +64,7 @@ public class SerializationTests
             },
             WatariDtsContent = WatariResources.WatariDts,
         };
-        TypeGenerator.Generate(options);
+        TypeGenerator.Generate(options, NullLogger.Instance);
 
         // Check if files are generated
         var outputDir = Path.Combine(options.OutputPath, "src", "generated");

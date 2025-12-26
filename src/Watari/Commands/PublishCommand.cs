@@ -2,10 +2,11 @@ using CliWrap;
 using CliWrap.Buffered;
 using Microsoft.Extensions.DependencyInjection;
 using Watari.Types;
+using Microsoft.Extensions.Logging;
 
 namespace Watari.Commands;
 
-public class PublishCommand(FrameworkOptions options)
+public class PublishCommand(FrameworkOptions options, ILogger<PublishCommand> logger)
 {
     public FrameworkOptions Options { get; } = options;
 
@@ -15,14 +16,14 @@ public class PublishCommand(FrameworkOptions options)
         await Cli.Wrap("npm")
             .WithArguments("run build")
             .WithWorkingDirectory(Options.FrontendPath)
-            .WithStandardOutputPipe(PipeTarget.ToDelegate(Console.WriteLine))
-            .WithStandardErrorPipe(PipeTarget.ToDelegate(Console.Error.WriteLine))
+            .WithStandardOutputPipe(PipeTarget.ToDelegate(line => logger.LogInformation("[npm build] {Line}", line)))
+            .WithStandardErrorPipe(PipeTarget.ToDelegate(line => logger.LogError("[npm build] {Line}", line)))
             .ExecuteBufferedAsync();
 
         await Cli.Wrap("dotnet")
             .WithArguments($"publish --output dist")
-            .WithStandardOutputPipe(PipeTarget.ToDelegate(Console.WriteLine))
-            .WithStandardErrorPipe(PipeTarget.ToDelegate(Console.Error.WriteLine))
+            .WithStandardOutputPipe(PipeTarget.ToDelegate(line => logger.LogInformation("[dotnet publish] {Line}", line)))
+            .WithStandardErrorPipe(PipeTarget.ToDelegate(line => logger.LogError("[dotnet publish] {Line}", line)))
             .ExecuteBufferedAsync();
 
         // Copy frontend dist to published folder

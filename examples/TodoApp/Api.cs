@@ -1,7 +1,8 @@
 using System.Text.Json;
 using Watari;
+using Microsoft.Extensions.Logging;
 
-public class Api(WatariContext context)
+public class Api(WatariContext context, ILogger<Api> logger)
 {
     private static List<TodoItem> _todos = new();
     private static readonly string _dataFile = "todos.json";
@@ -92,7 +93,7 @@ public class Api(WatariContext context)
 
     public void MoveWindowRight()
     {
-        Console.WriteLine("Moving window right");
+        logger.LogInformation("Moving window right");
         var (x, y) = _context.MainWindow!.GetPosition();
         _context.MainWindow.Move(x + 50, y);
     }

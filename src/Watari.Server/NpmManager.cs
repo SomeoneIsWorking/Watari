@@ -1,14 +1,15 @@
 
 
 using CliWrap;
+using Microsoft.Extensions.Logging;
 
 namespace Watari;
 
-public class NpmManager(string dir, int port)
+public class NpmManager(string dir, int port, ILogger<NpmManager> logger)
 {
     public async Task StartDevAsync(CancellationToken cancellationToken = default)
     {
-        Console.WriteLine("Starting npm dev server...");
+        logger.LogInformation("Starting npm dev server...");
         var tsc = new TaskCompletionSource();
 
         // Script to start npm dev server with port and monitor parent process
@@ -26,7 +27,7 @@ public class NpmManager(string dir, int port)
             .WithWorkingDirectory(dir)
             .WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
             {
-                Console.WriteLine($"[npm stdout]: {line}");
+                logger.LogInformation("[npm stdout]: {Line}", line);
                 if (line.Contains("ready in"))
                 {
                     tsc.SetResult();
@@ -34,7 +35,7 @@ public class NpmManager(string dir, int port)
             }))
             .WithStandardErrorPipe(PipeTarget.ToDelegate(line =>
             {
-                Console.Error.WriteLine($"[npm stderr]: {line}");
+                logger.LogError("[npm stderr]: {Line}", line);
                 tsc.SetException(new Exception(line));
             }))
             .ExecuteAsync(default, cancellationToken);
