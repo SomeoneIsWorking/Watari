@@ -203,6 +203,8 @@ public class TypeGeneratorInstance(TypeGeneratorOptions options, ILogger logger)
             return "boolean";
         if (type == typeof(void) || type == typeof(Task))
             return "void";
+        if (type == typeof(byte[]))
+            return "string"; // base64 encoded string
 
         if (options.Handlers.TryGetValue(type, out var handler))
         {
