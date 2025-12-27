@@ -88,7 +88,7 @@ public class Server(IOptions<ServerOptions> options, IServiceProvider servicePro
 
         var instance = serviceProvider.GetRequiredService(type);
         var actionValue = actionMethod.Invoke(instance, args);
-        var finalValue = await AwaitIfTask(actionMethod, actionValue);
+        var finalValue = await AwaitIfTask(actionValue);
 
         if (finalValue == null)
         {
@@ -98,24 +98,21 @@ public class Server(IOptions<ServerOptions> options, IServiceProvider servicePro
         return Results.Json(finalValue, JsonOptions);
     }
 
-    private static async Task<object?> AwaitIfTask(MethodInfo method, object? value)
+    private static async Task<object?> AwaitIfTask(object? value)
     {
-        if (!method.ReturnType.IsAssignableTo(typeof(Task)))
+        if (value is not Task task)
         {
             return value;
         }
-        var task = (Task)value!;
+
         await task;
-        if (method.ReturnType == typeof(Task))
+
+        var propertyInfo = task.GetType().GetProperty(nameof(Task<object>.Result));
+        if (propertyInfo == null)
         {
             return null;
         }
-        else
-        {
-            var actualResult = task.GetType().GetProperty(nameof(Task<object>.Result))!.GetValue(task);
-            var responseType = method.ReturnType.GetGenericArguments()[0];
-            return (actualResult, responseType);
-        }
+        return propertyInfo.GetValue(task);
     }
 
     public async Task EmitEvent(string eventName, object data)
