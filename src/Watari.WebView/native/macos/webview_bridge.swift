@@ -2,6 +2,22 @@ import Cocoa
 import WebKit
 import UniformTypeIdentifiers
 
+func commonJSCompletionHandler(webView: WKWebView, callbackId: String? = nil) -> (Any?, Error?) -> Void {
+    return { result, error in
+        if let error = error {
+            print("[WebView] JavaScript evaluation error: \(error.localizedDescription)")
+            let nsError = error as NSError 
+            print("[WebView] Error domain: \(nsError.domain), code: \(nsError.code)")
+            print("[WebView] Error userInfo: \(nsError.userInfo)")
+            if callbackId != nil {
+                let escapedError = error.localizedDescription.replacingOccurrences(of: "'", with: "\\'")
+                let errorJs = "watari.callbackError('\(callbackId!)', '\(escapedError)')"
+                webView.evaluateJavaScript(errorJs, completionHandler: nil)
+            }
+        }
+    }
+}
+
 class WebViewConsoleLogger: NSObject, WKScriptMessageHandler {
     var consoleCallback: (@convention(c) (UnsafePointer<CChar>?, UnsafePointer<CChar>?) -> Void)?
 
@@ -68,14 +84,15 @@ class WebViewFileDialogHandler: NSObject, WKScriptMessageHandler {
         if response == .OK, let url = panel.url {
             result = url.path
         }
-        
+        print("[WebViewFileDialogHandler] selected file: \(result ?? "none")")
         let js: String
         if let result = result {
-            js = "watari.callbacks['\(callbackId)']('\(result)')"
+            let escapedResult = result.replacingOccurrences(of: "'", with: "\\'")
+            js = "watari.callbacks['\(callbackId)']('\(escapedResult)')"
         } else {
             js = "watari.callbacks['\(callbackId)'](null)"
         }
-        webView?.evaluateJavaScript(js, completionHandler: nil)
+        webView?.evaluateJavaScript(js, completionHandler: commonJSCompletionHandler(webView: webView!, callbackId: callbackId))
     }
 }
 
@@ -99,7 +116,7 @@ class MyWKWebView: WKWebView {
         let location = sender.draggingLocation
         let pointInView = convert(location, from: nil)
         let js = "watari._checkAndValidateDropZone('\(handler.id!)', \(pointInView.x), \(pointInView.y), '\(handler.allowedExtensions ?? "")', '\(jsonString)')"
-        evaluateJavaScript(js, completionHandler: nil)
+        evaluateJavaScript(js, completionHandler: commonJSCompletionHandler(webView: self))
         return .copy
     }
 
@@ -110,7 +127,7 @@ class MyWKWebView: WKWebView {
     override func draggingExited(_ sender: NSDraggingInfo?) {
         guard let handler = dropHandler, handler.id != nil else { return }
         let clearJs = "watari._clearDropZoneClass('\(handler.id!)')"
-        evaluateJavaScript(clearJs, completionHandler: nil)
+        evaluateJavaScript(clearJs, completionHandler: commonJSCompletionHandler(webView: self))
     }
 
     override func prepareForDragOperation(_ sender: NSDraggingInfo) -> Bool {
@@ -120,7 +137,7 @@ class MyWKWebView: WKWebView {
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
         guard let handler = dropHandler, let callbackId = handler.callbackId else { return false }
         let clearJs = "watari._clearDropZoneClass('\(handler.id!)')"
-        evaluateJavaScript(clearJs, completionHandler: nil)
+        evaluateJavaScript(clearJs, completionHandler: commonJSCompletionHandler(webView: self))
         let pasteboard = sender.draggingPasteboard
         let fileURLs = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
         var paths = [String]()
@@ -135,7 +152,7 @@ class MyWKWebView: WKWebView {
         let location = sender.draggingLocation
         let pointInView = convert(location, from: nil)
         let js = "watari._handleDrop('\(handler.id!)', \(pointInView.x), \(pointInView.y), '\(jsonString)', '\(callbackId)')"
-        evaluateJavaScript(js, completionHandler: nil)
+        evaluateJavaScript(js, completionHandler: commonJSCompletionHandler(webView: self, callbackId: callbackId))
         return true
     }
 }
@@ -213,7 +230,7 @@ public func WebView_Eval(_ viewHandle: UnsafeMutableRawPointer?, _ js: UnsafePoi
     let webView = Unmanaged<WKWebView>.fromOpaque(viewHandle).takeUnretainedValue()
     let jsString = String(cString: js)
     print("[WebView_Eval] evaluating JavaScript on WKWebView \(webView): \(jsString)")
-    webView.evaluateJavaScript(jsString, completionHandler: nil)
+    webView.evaluateJavaScript(jsString, completionHandler: commonJSCompletionHandler(webView: webView))
 }
 
 @_cdecl("WebView_Destroy")

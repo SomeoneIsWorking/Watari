@@ -41,6 +41,12 @@ function initWatari(serverPort) {
       };
     },
     callbacks: {},
+    callbackErrors: {},
+    callbackError: function (callbackId, error) {
+      if (this.callbackErrors[callbackId]) {
+        this.callbackErrors[callbackId](new Error(error));
+      }
+    },
     drop_zone: function (elementId, callback) {
       const element = document.getElementById(elementId);
       if (!element) {
@@ -66,9 +72,18 @@ function initWatari(serverPort) {
       };
     },
     openFileDialog: function (allowedExtensions) {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         const callbackId = Date.now().toString();
-        this.callbacks[callbackId] = resolve;
+        this.callbacks[callbackId] = (result) => {
+          resolve(result);
+          delete this.callbacks[callbackId];
+          delete this.callbackErrors[callbackId];
+        };
+        this.callbackErrors[callbackId] = (error) => {
+          reject(error);
+          delete this.callbacks[callbackId];
+          delete this.callbackErrors[callbackId];
+        };
         window.webkit.messageHandlers.openFileDialog.postMessage({
           callbackId: callbackId,
           allowedExtensions: allowedExtensions,
