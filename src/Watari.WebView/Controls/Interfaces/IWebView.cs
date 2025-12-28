@@ -6,5 +6,6 @@ public interface IWebView
     bool Eval(string js);
     void Destroy();
     void AddUserScript(string scriptSource, int injectionTime, bool forMainFrameOnly);
+    void SetEnableDevTools(bool enable);
     event Action<string, string> ConsoleMessage;
 }

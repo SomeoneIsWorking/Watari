@@ -36,4 +36,5 @@ public class WebView : IWebView
     public bool Eval(string js) => WebViewImpl.Eval(js);
     public void Destroy() => WebViewImpl.Destroy();
     public void AddUserScript(string scriptSource, int injectionTime, bool forMainFrameOnly) => WebViewImpl.AddUserScript(scriptSource, injectionTime, forMainFrameOnly);
+    public void SetEnableDevTools(bool enable) => WebViewImpl.SetEnableDevTools(enable);
 }

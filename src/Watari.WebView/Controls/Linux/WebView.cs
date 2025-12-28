@@ -35,4 +35,10 @@ public class WebView : IWebView
         IntPtr script = WebViewBridge.webkit_user_script_new(scriptSource, inj_time, inj_frames, IntPtr.Zero, IntPtr.Zero);
         WebViewBridge.webkit_user_content_manager_add_script(manager, script);
     }
+    public void SetEnableDevTools(bool enable)
+    {
+        IntPtr config = WebViewBridge.webkit_web_view_get_configuration(Handle);
+        IntPtr prefs = WebViewBridge.webkit_web_view_configuration_get_preferences(config);
+        WebViewBridge.webkit_preferences_set_developer_extras_enabled(prefs, enable);
+    }
 }

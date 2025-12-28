@@ -31,4 +31,16 @@ internal static partial class WebViewBridge
     [LibraryImport("libwebkit2gtk-4.1.so.0", EntryPoint = "webkit_user_content_manager_add_script")]
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
     public static partial void webkit_user_content_manager_add_script(IntPtr manager, IntPtr script);
+
+    [LibraryImport("libwebkit2gtk-4.1.so.0", EntryPoint = "webkit_web_view_get_configuration")]
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+    public static partial IntPtr webkit_web_view_get_configuration(IntPtr web_view);
+    [LibraryImport("libwebkit2gtk-4.1.so.0", EntryPoint = "webkit_web_view_configuration_get_preferences")]
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+    public static partial IntPtr webkit_web_view_configuration_get_preferences(IntPtr configuration);
+    
+    [LibraryImport("libwebkit2gtk-4.1.so.0", EntryPoint = "webkit_preferences_set_developer_extras_enabled")]
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+    public static partial void webkit_preferences_set_developer_extras_enabled(IntPtr preferences, [MarshalAs(UnmanagedType.Bool)] bool enable);
+
 }

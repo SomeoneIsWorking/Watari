@@ -39,4 +39,9 @@ public class WebView : IWebView
     {
         WebViewBridge.AddUserScript(Handle, scriptSource, injectionTime, forMainFrameOnly);
     }
+
+    public void SetEnableDevTools(bool enable)
+    {
+        WebViewBridge.SetEnableDevTools(Handle, enable);
+    }
 }

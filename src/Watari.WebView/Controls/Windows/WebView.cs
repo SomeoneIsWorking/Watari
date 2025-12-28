@@ -55,4 +55,12 @@ public class WebView : IWebView
             _coreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(scriptSource);
         }
     }
+
+    public void SetEnableDevTools(bool enable)
+    {
+        if (_coreWebView2 != null)
+        {
+            _coreWebView2.Settings.AreDevToolsEnabled = enable;
+        }
+    }
 }

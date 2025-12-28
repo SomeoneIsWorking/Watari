@@ -188,6 +188,13 @@ public func WebView_Create(_ callback: (@convention(c) (UnsafePointer<CChar>?, U
     return CFBridgingRetain(created)
 }
 
+@_cdecl("WebView_SetEnableDevTools")
+public func WebView_SetEnableDevTools(_ viewHandle: UnsafeMutableRawPointer?, _ enable: Bool) {
+    guard let viewHandle = viewHandle else { return }
+    let webView = Unmanaged<WKWebView>.fromOpaque(viewHandle).takeUnretainedValue()
+    webView.configuration.preferences.setValue(enable, forKey: "developerExtrasEnabled")
+}
+
 @_cdecl("WebView_Navigate")
 public func WebView_Navigate(_ viewHandle: UnsafeMutableRawPointer?, _ url: UnsafePointer<CChar>?) {
     guard let viewHandle = viewHandle, let url = url else { return }

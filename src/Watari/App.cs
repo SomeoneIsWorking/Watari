@@ -29,6 +29,7 @@ public class App
         // Initialize application (menus, Dock, activation)
         context.Application.AddWindow(context.MainWindow, true);
         context.WebView = new Controls.Platform.WebView();
+        context.WebView.SetEnableDevTools(dev);
         context.WebView.ConsoleMessage += (level, message) =>
         {
             logger.LogInformation("[WebView] [{Level}] {Message}", level.ToUpper(), message);
