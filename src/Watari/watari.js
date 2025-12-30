@@ -121,7 +121,11 @@ function initWatari(serverPort) {
       const paths = JSON.parse(pathsJson);
       const isOver = this._checkDropZone(elementId, x, y);
       const allowedFiles = this._validateExtensions(allowed, paths);
-      this._updateDropZoneClass(elementId, isOver ? 1 : 0, allowedFiles ? 1 : 0);
+      this._updateDropZoneClass(
+        elementId,
+        isOver ? 1 : 0,
+        allowedFiles ? 1 : 0
+      );
       return allowedFiles;
     },
     _handleDrop: function (elementId, x, y, pathsJson, callbackId) {
@@ -134,4 +138,16 @@ function initWatari(serverPort) {
     },
   };
   window.watari._connectEvents();
+
+  var levels = ["log", "error", "warn", "info", "debug"];
+  levels.forEach(function (level) {
+    const original = console[level];
+    console[level] = function (...args) {
+      original.apply(console, args);
+      window.webkit.messageHandlers.consoleLog.postMessage({
+        level: level,
+        message: args.join(" "),
+      });
+    };
+  });
 }

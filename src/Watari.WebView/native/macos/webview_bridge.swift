@@ -176,19 +176,6 @@ public func WebView_Create(_ callback: (@convention(c) (UnsafePointer<CChar>?, U
     // Set up file dialog handler
     let fileDialogHandler = WebViewFileDialogHandler()
     userContentController.add(fileDialogHandler, name: "openFileDialog")
-
-    // Inject script to override console methods
-    let consoleOverrideScript = """
-    var levels = ['log', 'error', 'warn', 'info', 'debug'];
-    levels.forEach(function(level) {
-        console[level] = function(...args) {
-            window.webkit.messageHandlers.consoleLog.postMessage({level: level, message: args.join(' ')});
-        };
-    });
-    """
-    let userScript = WKUserScript(source: consoleOverrideScript, injectionTime: .atDocumentStart, forMainFrameOnly: true)
-    userContentController.addUserScript(userScript)
-
     config.userContentController = userContentController
 
     let created = MyWKWebView(frame: NSRect(x: 0, y: 0, width: 1024, height: 768), configuration: config)
