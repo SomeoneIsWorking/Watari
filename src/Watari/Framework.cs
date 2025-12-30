@@ -30,11 +30,12 @@ public class Framework(FrameworkOptions options)
         services.AddSingleton<Server>();
         var context = new WatariContext
         {
-            Options = Options
+            Options = Options,
         };
         services.AddSingleton(context);
 
         var serviceProvider = services.BuildServiceProvider();
+        context.ServiceProvider = serviceProvider;
         var server = serviceProvider.GetRequiredService<Server>();
 
         // Automatically subscribe to events on exposed types and emit them
