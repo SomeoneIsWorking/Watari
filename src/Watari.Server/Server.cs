@@ -43,7 +43,7 @@ public class Server(IOptions<ServerOptions> options, IServiceProvider servicePro
             ContentRootPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
         });
         builder.Services.AddCors()
-            .AddLogging(x => x.ClearProviders());
+            .AddLogging(x => x.SetMinimumLevel(LogLevel.Warning));
         WebApplication webApplication = builder.Build();
         webApplication.Urls.Add($"http://localhost:{Options.ServerPort}");
         webApplication.UseCors(builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
