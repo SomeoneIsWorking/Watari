@@ -4,8 +4,14 @@ import UniformTypeIdentifiers
 import AVFoundation
 
 var audioEngine: AVAudioEngine?
-var playerNode: AVAudioPlayerNode?
+var sourceNode: AVAudioSourceNode?
 var audioFormat: AVAudioFormat?
+var leftBuffer: [Float] = []
+var rightBuffer: [Float] = []
+var writeIndex = 0
+var readIndex = 0
+var bufferSize = 8192
+var bufferLock = NSLock()
 
 func sigintHandler(_ signal: Int32) {
     print("[ApplicationBridge] SIGINT received, terminating application")
@@ -142,14 +148,36 @@ public func Application_OpenFileDialog(_ app: UnsafeMutableRawPointer?, _ allowe
 public func Application_InitAudio(_ app: UnsafeMutableRawPointer?, _ sampleRate: Double) {
     guard audioEngine == nil else { return }
     audioEngine = AVAudioEngine()
-    playerNode = AVAudioPlayerNode()
     audioFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: sampleRate, channels: 2, interleaved: false)
-    guard let audioEngine = audioEngine, let playerNode = playerNode, let audioFormat = audioFormat else { return }
-    audioEngine.attach(playerNode)
-    audioEngine.connect(playerNode, to: audioEngine.mainMixerNode, format: audioFormat)
+    guard let audioEngine = audioEngine, let audioFormat = audioFormat else { return }
+    leftBuffer = Array(repeating: 0.0, count: bufferSize)
+    rightBuffer = Array(repeating: 0.0, count: bufferSize)
+    writeIndex = 0
+    readIndex = 0
+    sourceNode = AVAudioSourceNode(format: audioFormat) { isSilence, timestamp, frameCount, audioBufferList -> OSStatus in
+        let ablPointer = UnsafeMutableAudioBufferListPointer(audioBufferList)
+        bufferLock.lock()
+        var allSilence = true
+        for frame in 0..<Int(frameCount) {
+            if readIndex != writeIndex {
+                ablPointer[0].mData?.assumingMemoryBound(to: Float.self)[frame] = leftBuffer[readIndex]
+                ablPointer[1].mData?.assumingMemoryBound(to: Float.self)[frame] = rightBuffer[readIndex]
+                readIndex = (readIndex + 1) % bufferSize
+                allSilence = false
+            } else {
+                ablPointer[0].mData?.assumingMemoryBound(to: Float.self)[frame] = 0.0
+                ablPointer[1].mData?.assumingMemoryBound(to: Float.self)[frame] = 0.0
+            }
+        }
+        bufferLock.unlock()
+        isSilence.pointee = ObjCBool(allSilence)
+        return noErr
+    }
+    guard let sourceNodeInstance = sourceNode else { return }
+    audioEngine.attach(sourceNodeInstance)
+    audioEngine.connect(sourceNodeInstance, to: audioEngine.mainMixerNode, format: audioFormat)
     do {
         try audioEngine.start()
-        playerNode.play()
         print("[ApplicationBridge] Audio initialized with sample rate \(sampleRate)")
     } catch {
         print("[ApplicationBridge] Failed to start audio engine: \(error)")
@@ -158,15 +186,14 @@ public func Application_InitAudio(_ app: UnsafeMutableRawPointer?, _ sampleRate:
 
 @_cdecl("Application_PlayAudio")
 public func Application_PlayAudio(_ app: UnsafeMutableRawPointer?, _ samples: UnsafeMutableRawPointer?, _ count: Int32) {
-    guard let samples = samples, let playerNode = playerNode, let audioFormat = audioFormat else { return }
+    guard let samples = samples, !leftBuffer.isEmpty else { return }
     let frameCount = UInt32(count) / 2  // Assuming stereo, 2 channels
-    guard let buffer = AVAudioPCMBuffer(pcmFormat: audioFormat, frameCapacity: frameCount) else { return }
-    buffer.frameLength = frameCount
-    // Deinterleave and convert int16 to float32: input is L R L R int16, output channel 0: L L L float, channel 1: R R R float
     let input = samples.bindMemory(to: Int16.self, capacity: Int(count))
+    bufferLock.lock()
     for i in 0..<Int(frameCount) {
-        buffer.floatChannelData![0][i] = Float(input[i * 2]) / 32768.0     // Left
-        buffer.floatChannelData![1][i] = Float(input[i * 2 + 1]) / 32768.0 // Right
+        leftBuffer[writeIndex] = Float(input[i * 2]) / 32768.0
+        rightBuffer[writeIndex] = Float(input[i * 2 + 1]) / 32768.0
+        writeIndex = (writeIndex + 1) % bufferSize
     }
-    playerNode.scheduleBuffer(buffer)
+    bufferLock.unlock()
 }
