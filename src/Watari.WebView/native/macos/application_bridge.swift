@@ -146,14 +146,31 @@ public func Application_OpenFileDialog(_ app: UnsafeMutableRawPointer?, _ allowe
 
 @_cdecl("Application_InitAudio")
 public func Application_InitAudio(_ app: UnsafeMutableRawPointer?, _ sampleRate: Double) {
-    guard audioEngine == nil else { return }
+    if let engine = audioEngine {
+        if let format = audioFormat, format.sampleRate == sampleRate {
+            return
+        }
+        print("[ApplicationBridge] Reinitializing audio with new sample rate: \(sampleRate)")
+        engine.stop()
+        if let node = sourceNode {
+            engine.detach(node)
+        }
+        audioEngine = nil
+        sourceNode = nil
+        audioFormat = nil
+    }
+
     audioEngine = AVAudioEngine()
     audioFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: sampleRate, channels: 2, interleaved: false)
     guard let audioEngine = audioEngine, let audioFormat = audioFormat else { return }
+    
+    bufferLock.lock()
     leftBuffer = Array(repeating: 0.0, count: bufferSize)
     rightBuffer = Array(repeating: 0.0, count: bufferSize)
     writeIndex = 0
     readIndex = 0
+    bufferLock.unlock()
+
     sourceNode = AVAudioSourceNode(format: audioFormat) { isSilence, timestamp, frameCount, audioBufferList -> OSStatus in
         let ablPointer = UnsafeMutableAudioBufferListPointer(audioBufferList)
         bufferLock.lock()
