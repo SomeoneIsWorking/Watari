@@ -6,7 +6,6 @@ namespace Watari.Controls.MacOS;
 
 internal class Application : IApplication
 {
-    public static double SampleRate = 44100;
     public IntPtr Handle { get; }
     public Application()
     {
@@ -40,9 +39,8 @@ internal class Application : IApplication
         return ApplicationBridge.OpenFileDialog(Handle, allowedExtensions);
     }
 
-    public void InitAudio(double sampleRate = 44100)
+    public void InitAudio(double sampleRate)
     {
-        SampleRate = sampleRate;
         ApplicationBridge.InitAudio(Handle, sampleRate);
     }
 

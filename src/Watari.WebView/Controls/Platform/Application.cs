@@ -40,7 +40,7 @@ public class Application
 
     public string? OpenFileDialog(string allowedExtensions) => _application.OpenFileDialog(allowedExtensions);
 
-    public void InitAudio(double sampleRate = 44100) => _application.InitAudio(sampleRate);
+    public void InitAudio(double sampleRate) => _application.InitAudio(sampleRate);
 
     public void PlayAudio(short[] samples) => _application.PlayAudio(samples);
 

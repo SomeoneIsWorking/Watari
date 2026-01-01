@@ -37,7 +37,7 @@ internal class Application : IApplication
         return null;
     }
 
-    public void InitAudio(double sampleRate = 44100)
+    public void InitAudio(double sampleRate)
     {
         // TODO: Implement audio initialization
     }
