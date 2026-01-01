@@ -8,12 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.1" />
+    <PackageReference Include="CliWrap" Version="3.10.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Watari.Types\Watari.Types.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="CliWrap" Version="3.10.0" />
   </ItemGroup>
 </Project>
